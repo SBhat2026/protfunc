@@ -1,0 +1,13 @@
+venv/
+__pycache__/
+*.pyc
+.DS_Store
+mammal_emb_cache.pt
+*.pth
+*.pkl
+go_annotations_fixed.csv
+buildenv/
+venv/
+__pycache__/
+*.pyc
+.DS_Store

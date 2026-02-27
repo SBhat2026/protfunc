@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ProtFunc — GO Molecular Function Predictor</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:            #f5f5f7;
+      --surface:       #ffffff;
+      --surface-2:     #f9f9fb;
+      --border:        rgba(0,0,0,0.08);
+      --border-strong: rgba(0,0,0,0.14);
+      --text-primary:  #1d1d1f;
+      --text-2:        #3d3d3f;
+      --text-muted:    #86868b;
+      --accent:        #0071e3;
+      --accent-hover:  #0077ed;
+      --accent-dim:    rgba(0,113,227,0.1);
+      --high-bg: #e8f5f0; --high-border: #b2dece; --high-text: #1a4a3a; --high-bar: #34c98a;
+      --med-bg:  #fff8e6; --med-border:  #f5d98c; --med-text:  #5c3d00; --med-bar:  #f5a623;
+      --low-bg:  #fff2f2; --low-border:  #f5c0c0; --low-text:  #5c1a1a; --low-bar:  #ff5f5f;
+      --radius-sm: 8px; --radius-md: 14px; --radius-lg: 20px;
+      --shadow-card: 0 1px 3px rgba(0,0,0,0.06), 0 8px 24px rgba(0,0,0,0.05);
+      --shadow-card-hover: 0 2px 6px rgba(0,0,0,0.08), 0 16px 40px rgba(0,0,0,0.08);
+      --blob1: #b3d9ff; --blob2: #c9f0e4; --blob3: #ddd6ff;
+    }
+
+    html.dark {
+      --bg:            #0d0d0f;
+      --surface:       #1c1c1e;
+      --surface-2:     #2c2c2e;
+      --border:        rgba(255,255,255,0.08);
+      --border-strong: rgba(255,255,255,0.14);
+      --text-primary:  #f5f5f7;
+      --text-2:        #d1d1d6;
+      --text-muted:    #636366;
+      --accent:        #2997ff;
+      --accent-hover:  #47a8ff;
+      --accent-dim:    rgba(41,151,255,0.15);
+      --high-bg: #0d2e22; --high-border: #1a5c40; --high-text: #6ee7b7; --high-bar: #34c98a;
+      --med-bg:  #2a1f00; --med-border:  #5c3d00; --med-text:  #fcd34d; --med-bar:  #f5a623;
+      --low-bg:  #2a0d0d; --low-border:  #5c1a1a; --low-text:  #fca5a5; --low-bar:  #ff5f5f;
+      --shadow-card: 0 1px 3px rgba(0,0,0,0.3), 0 8px 24px rgba(0,0,0,0.25);
+      --shadow-card-hover: 0 2px 6px rgba(0,0,0,0.4), 0 16px 40px rgba(0,0,0,0.35);
+      --blob1: rgba(41,151,255,0.3); --blob2: rgba(52,201,138,0.2); --blob3: rgba(167,139,250,0.2);
+    }
+
+    html { font-size: 15px; -webkit-font-smoothing: antialiased; }
+    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background: var(--bg); color: var(--text-primary); min-height: 100vh; overflow-x: hidden; transition: background 0.25s, color 0.25s; }
+
+    .bg-mesh { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+    .mesh-blob { position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.35; }
+    .blob-1 { width: 600px; height: 600px; top: -180px; right: -120px; background: radial-gradient(circle, var(--blob1) 0%, transparent 70%); animation: drift1 18s ease-in-out infinite alternate; }
+    .blob-2 { width: 400px; height: 400px; bottom: 10%; left: -80px; background: radial-gradient(circle, var(--blob2) 0%, transparent 70%); animation: drift2 22s ease-in-out infinite alternate; }
+    .blob-3 { width: 300px; height: 300px; top: 40%; right: 10%; background: radial-gradient(circle, var(--blob3) 0%, transparent 70%); animation: drift1 26s ease-in-out infinite alternate-reverse; }
+    @keyframes drift1 { from { transform: translate(0,0) scale(1); } to { transform: translate(30px,20px) scale(1.06); } }
+    @keyframes drift2 { from { transform: translate(0,0) scale(1); } to { transform: translate(-20px,30px) scale(1.04); } }
+
+    .layout { position: relative; z-index: 1; max-width: 780px; margin: 0 auto; padding: 48px 24px 80px; display: flex; flex-direction: column; gap: 28px; }
+
+    .header { display: flex; align-items: center; justify-content: space-between; }
+    .logo { display: flex; align-items: center; gap: 10px; color: var(--text-primary); text-decoration: none; }
+    .logo-icon { width: 28px; height: 28px; color: var(--accent); flex-shrink: 0; }
+    .logo-text { font-size: 1.05rem; font-weight: 600; letter-spacing: -0.02em; }
+    .header-right { display: flex; align-items: center; gap: 8px; }
+    .badge { font-size: 0.72rem; font-weight: 500; letter-spacing: 0.02em; color: var(--text-muted); background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 3px 10px; }
+
+    /* Dark mode toggle */
+    .theme-btn { width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--border); background: var(--surface); color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.15s, border-color 0.15s, transform 0.15s; flex-shrink: 0; }
+    .theme-btn:hover { background: var(--surface-2); border-color: var(--border-strong); transform: scale(1.08); }
+    .theme-btn svg { width: 16px; height: 16px; }
+    .icon-sun { display: none; }
+    .icon-moon { display: block; }
+    html.dark .icon-sun  { display: block; }
+    html.dark .icon-moon { display: none; }
+
+    .hero { padding: 8px 0 4px; }
+    .hero-title { font-size: clamp(2rem, 5vw, 2.8rem); font-weight: 600; letter-spacing: -0.04em; line-height: 1.12; color: var(--text-primary); margin-bottom: 14px; }
+    .hero-sub { font-size: 0.95rem; line-height: 1.65; color: var(--text-muted); max-width: 520px; font-weight: 400; }
+
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-card); transition: box-shadow 0.2s, background 0.25s, border-color 0.25s; }
+    .input-card { padding: 20px 20px 16px; display: flex; flex-direction: column; gap: 12px; }
+    .card-label { display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; font-weight: 500; color: var(--text-muted); letter-spacing: 0.04em; text-transform: uppercase; }
+    .char-count { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--text-muted); }
+
+    .seq-textarea { width: 100%; min-height: 160px; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface-2); padding: 14px 16px; font-family: 'JetBrains Mono', monospace; font-size: 0.82rem; line-height: 1.7; color: var(--text-primary); resize: vertical; outline: none; transition: border-color 0.15s, background 0.15s; }
+    .seq-textarea::placeholder { color: var(--text-muted); }
+    .seq-textarea:focus { border-color: var(--accent); background: var(--surface); box-shadow: 0 0 0 3px var(--accent-dim); }
+
+    .input-footer { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+    .input-hints { display: flex; gap: 6px; }
+    .hint-tag { font-size: 0.7rem; font-weight: 500; color: var(--text-muted); background: var(--surface-2); border: 1px solid var(--border); border-radius: 6px; padding: 3px 8px; }
+
+    .btn-predict { display: flex; align-items: center; gap: 8px; background: var(--accent); color: #fff; border: none; border-radius: var(--radius-sm); padding: 10px 20px; font-size: 0.875rem; font-weight: 500; cursor: pointer; transition: background 0.15s, transform 0.1s, opacity 0.15s; letter-spacing: -0.01em; white-space: nowrap; }
+    .btn-predict:hover  { background: var(--accent-hover); transform: translateY(-1px); }
+    .btn-predict:active { transform: translateY(0); }
+    .btn-predict:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+    .btn-icon { font-size: 1rem; transition: transform 0.2s; }
+    .btn-predict:hover .btn-icon { transform: translateX(3px); }
+
+    @keyframes shake { 0%,100% { transform: translateX(0); } 20%,60% { transform: translateX(-5px); } 40%,80% { transform: translateX(5px); } }
+    .shake { animation: shake 0.35s ease; }
+
+    .status { display: flex; align-items: center; gap: 10px; padding: 12px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); font-size: 0.875rem; color: var(--text-2); }
+    .status.hidden  { display: none; }
+    .status.visible { display: flex; }
+    .err-msg { color: #ff5f5f; font-weight: 500; }
+
+    .spinner { width: 16px; height: 16px; flex-shrink: 0; border: 2px solid var(--border-strong); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .results-area { display: flex; flex-direction: column; gap: 18px; }
+
+    .result-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-card); overflow: hidden; animation: fadeUp 0.3s ease both; transition: box-shadow 0.2s, background 0.25s; }
+    .result-card:hover { box-shadow: var(--shadow-card-hover); }
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+
+    .result-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; padding: 16px 20px; border-bottom: 1px solid var(--border); background: var(--surface-2); transition: background 0.25s; }
+    .result-header-left { display: flex; align-items: center; gap: 10px; }
+    .seq-name { font-size: 0.9rem; font-weight: 600; color: var(--text-primary); letter-spacing: -0.01em; font-family: 'JetBrains Mono', monospace; }
+    .seq-len-pill { font-size: 0.72rem; font-weight: 500; color: var(--text-muted); background: var(--border); border-radius: 20px; padding: 2px 9px; }
+    .result-stats { display: flex; gap: 6px; }
+    .stat-chip { font-size: 0.72rem; font-weight: 500; color: var(--accent); background: var(--accent-dim); border-radius: 6px; padding: 2px 8px; }
+    .stat-chip.muted { color: var(--text-muted); background: transparent; border: 1px solid var(--border); }
+
+    .pred-list { padding: 12px 16px; display: flex; flex-direction: column; gap: 6px; }
+    .no-preds { text-align: center; color: var(--text-muted); font-size: 0.875rem; padding: 24px 0 18px; }
+
+    .pred-row { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 12px; padding: 10px 14px; border-radius: var(--radius-sm); border: 1px solid transparent; transition: transform 0.15s, box-shadow 0.15s; cursor: default; }
+    .pred-row:hover { transform: translateX(2px); box-shadow: 0 2px 8px rgba(0,0,0,0.12); }
+    .pred-row.conf-high { background: var(--high-bg); border-color: var(--high-border); }
+    .pred-row.conf-med  { background: var(--med-bg);  border-color: var(--med-border); }
+    .pred-row.conf-low  { background: var(--low-bg);  border-color: var(--low-border); }
+
+    .pred-main { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+    .pred-name { font-size: 0.875rem; font-weight: 500; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .pred-goid { font-size: 0.72rem; font-family: 'JetBrains Mono', monospace; color: var(--text-muted); }
+
+    .pred-right { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; min-width: 80px; }
+    .pred-conf-label { font-size: 0.68rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; }
+    .conf-high .pred-conf-label { color: var(--high-text); }
+    .conf-med  .pred-conf-label { color: var(--med-text); }
+    .conf-low  .pred-conf-label { color: var(--low-text); }
+    .pred-prob { font-size: 0.875rem; font-weight: 600; font-family: 'JetBrains Mono', monospace; }
+    .conf-high .pred-prob { color: var(--high-text); }
+    .conf-med  .pred-prob { color: var(--med-text); }
+    .conf-low  .pred-prob { color: var(--low-text); }
+
+    .prob-bar-wrap { width: 72px; height: 4px; background: rgba(128,128,128,0.2); border-radius: 2px; overflow: hidden; }
+    .prob-bar-fill { height: 100%; border-radius: 2px; transition: width 0.4s ease; }
+    .prob-bar-fill.conf-high { background: var(--high-bar); }
+    .prob-bar-fill.conf-med  { background: var(--med-bar); }
+    .prob-bar-fill.conf-low  { background: var(--low-bar); }
+
+    .error-card { background: var(--low-bg); border-color: var(--low-border); }
+    .seq-error { font-size: 0.8rem; color: var(--low-text); font-weight: 500; }
+    .empty-state { text-align: center; color: var(--text-muted); font-size: 0.9rem; padding: 32px; }
+
+    @media (max-width: 540px) {
+      .layout { padding: 32px 16px 60px; gap: 20px; }
+      .hero-title { font-size: 1.8rem; }
+      .pred-row { grid-template-columns: 1fr; }
+      .pred-right { flex-direction: row; align-items: center; justify-content: flex-start; }
+      .prob-bar-wrap { width: 60px; }
+      .input-footer { flex-direction: column; align-items: flex-start; }
+      .btn-predict { width: 100%; justify-content: center; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="bg-mesh" aria-hidden="true">
+    <div class="mesh-blob blob-1"></div>
+    <div class="mesh-blob blob-2"></div>
+    <div class="mesh-blob blob-3"></div>
+  </div>
+
+  <div class="layout">
+
+    <header class="header">
+      <div class="logo">
+        <svg class="logo-icon" viewBox="0 0 28 28" fill="none">
+          <circle cx="14" cy="14" r="13" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M7 14 C7 9.5 10.5 7 14 7 C17.5 7 21 9.5 21 14 C21 18.5 17.5 21 14 21" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          <circle cx="14" cy="14" r="2.5" fill="currentColor"/>
+          <path d="M14 11.5 L14 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          <path d="M16.5 14 L21 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        <span class="logo-text">ProtFunc</span>
+      </div>
+      <div class="header-right">
+        <span class="badge">ESM-2 · GO:MF</span>
+        <span class="badge">Beta</span>
+        <button class="theme-btn" id="themeBtn" title="Toggle dark mode" onclick="toggleTheme()">
+          <!-- Moon (shown in light mode) -->
+          <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+          </svg>
+          <!-- Sun (shown in dark mode) -->
+          <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="5"/>
+            <line x1="12" y1="1"  x2="12" y2="3"/>
+            <line x1="12" y1="21" x2="12" y2="23"/>
+            <line x1="4.22" y1="4.22"  x2="5.64" y2="5.64"/>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+            <line x1="1"  y1="12" x2="3"  y2="12"/>
+            <line x1="21" y1="12" x2="23" y2="12"/>
+            <line x1="4.22"  y1="19.78" x2="5.64"  y2="18.36"/>
+            <line x1="18.36" y1="5.64"  x2="19.78" y2="4.22"/>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <section class="hero">
+      <h1 class="hero-title">Molecular Function<br/>Prediction</h1>
+      <p class="hero-sub">Paste one or multiple amino acid sequences (plain or FASTA) to predict Gene Ontology molecular functions using ESM-2 embeddings.</p>
+    </section>
+
+    <div class="card input-card">
+      <div class="card-label">
+        <span>Amino Acid Sequence</span>
+        <span class="char-count" id="charCount">0 aa</span>
+      </div>
+      <textarea id="sequenceInput" class="seq-textarea"
+        placeholder=">MyProtein&#10;MKTIIALSYIFCLVFA..."
+        spellcheck="false" autocomplete="off"></textarea>
+      <div class="input-footer">
+        <div class="input-hints">
+          <span class="hint-tag">FASTA</span>
+          <span class="hint-tag">Plain AA</span>
+          <span class="hint-tag">Multi-sequence</span>
+        </div>
+        <button class="btn-predict" id="predictBtn" onclick="predict()">
+          <span class="btn-label">Predict Functions</span>
+          <span class="btn-icon">→</span>
+        </button>
+      </div>
+    </div>
+
+    <div id="status" class="status hidden"></div>
+    <div id="results" class="results-area"></div>
+
+  </div>
+
+  <script>
+    const ta = document.getElementById('sequenceInput');
+    const cc = document.getElementById('charCount');
+
+    // ── Theme ─────────────────────────────────────────────────────────────────
+    function applyTheme(dark) {
+      document.documentElement.classList.toggle('dark', dark);
+      localStorage.setItem('theme', dark ? 'dark' : 'light');
+    }
+
+    function toggleTheme() {
+      applyTheme(!document.documentElement.classList.contains('dark'));
+    }
+
+    // Respect saved preference, then system preference
+    const saved = localStorage.getItem('theme');
+    if (saved) {
+      applyTheme(saved === 'dark');
+    } else {
+      applyTheme(window.matchMedia('(prefers-color-scheme: dark)').matches);
+    }
+
+    // ── Char counter ──────────────────────────────────────────────────────────
+    ta.addEventListener('input', () => {
+      const seq = ta.value.replace(/>/g,'').replace(/[^A-Za-z]/g,'');
+      cc.textContent = seq.length ? `${seq.length.toLocaleString()} aa` : '0 aa';
+    });
+
+    ta.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && e.metaKey) predict();
+    });
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
+    function confClass(p) { return p >= 0.75 ? 'conf-high' : p >= 0.55 ? 'conf-med' : 'conf-low'; }
+    function confLabel(p) { return p >= 0.80 ? 'High' : p >= 0.60 ? 'Medium' : 'Low'; }
+    function probBar(p) {
+      return `<div class="prob-bar-wrap"><div class="prob-bar-fill ${confClass(p)}" style="width:${Math.round(p*100)}%"></div></div>`;
+    }
+    function escHtml(s) {
+      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    // ── Predict ───────────────────────────────────────────────────────────────
+    async function predict() {
+      const seq = ta.value.trim();
+      if (!seq) { shake(); return; }
+
+      const btn    = document.getElementById('predictBtn');
+      const status = document.getElementById('status');
+      const results= document.getElementById('results');
+
+      btn.disabled = true;
+      btn.querySelector('.btn-label').textContent = 'Running…';
+      status.className = 'status visible';
+      status.innerHTML = '<div class="spinner"></div><span>Running ESM-2 embeddings…</span>';
+      results.innerHTML = '';
+
+      try {
+        const res  = await fetch('/predict', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sequence: seq }),
+        });
+        if (!res.ok) throw new Error(`Server error ${res.status}`);
+        const data = await res.json();
+        status.className = 'status hidden';
+        renderResults(data.results);
+      } catch(e) {
+        status.className = 'status visible';
+        status.innerHTML = `<span class="err-msg">⚠ ${escHtml(e.message)}</span>`;
+      } finally {
+        btn.disabled = false;
+        btn.querySelector('.btn-label').textContent = 'Predict Functions';
+      }
+    }
+
+    function renderResults(results) {
+      const container = document.getElementById('results');
+      if (!results || results.length === 0) {
+        container.innerHTML = '<p class="empty-state">No results returned.</p>';
+        return;
+      }
+      container.innerHTML = results.map((r, idx) => {
+        if (r.error) {
+          return `<div class="result-card error-card">
+            <div class="result-header">
+              <div class="result-header-left">
+                <span class="seq-name">${escHtml(r.name || `Sequence ${idx+1}`)}</span>
+              </div>
+              <span class="seq-error">${escHtml(r.error)}</span>
+            </div>
+          </div>`;
+        }
+        const preds   = r.predictions || [];
+        const nThresh = r.n_above_threshold ?? preds.length;
+        const seqName = r.name || `Sequence ${idx+1}`;
+        const predHTML = preds.length === 0
+          ? '<p class="no-preds">No functions predicted above confidence threshold.</p>'
+          : preds.map(p => `
+            <div class="pred-row ${confClass(p.prob)}">
+              <div class="pred-main">
+                <span class="pred-name">${escHtml(p.name)}</span>
+                <span class="pred-goid">${escHtml(p.go_id)}</span>
+              </div>
+              <div class="pred-right">
+                <span class="pred-conf-label">${confLabel(p.prob)}</span>
+                <span class="pred-prob">${(p.prob*100).toFixed(1)}%</span>
+                ${probBar(p.prob)}
+              </div>
+            </div>`).join('');
+        return `
+          <div class="result-card" style="animation-delay:${idx*60}ms">
+            <div class="result-header">
+              <div class="result-header-left">
+                <span class="seq-name">${escHtml(seqName)}</span>
+                <span class="seq-len-pill">${r.sequence_length || '?'} aa</span>
+              </div>
+              <div class="result-stats">
+                <span class="stat-chip">${preds.length} shown</span>
+                ${nThresh > preds.length ? `<span class="stat-chip muted">${nThresh-preds.length} trimmed</span>` : ''}
+              </div>
+            </div>
+            <div class="pred-list">${predHTML}</div>
+          </div>`;
+      }).join('');
+    }
+
+    function shake() {
+      const card = document.querySelector('.input-card');
+      card.classList.add('shake');
+      card.addEventListener('animationend', () => card.classList.remove('shake'), { once: true });
+    }
+  </script>
+</body>
+</html>

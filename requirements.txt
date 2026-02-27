@@ -1,0 +1,11 @@
+fastapi
+uvicorn
+pydantic
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch
+fair-esm
+pandas
+joblib
+scikit-learn
+python-multipart
+huggingface_hub
