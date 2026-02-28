@@ -20,7 +20,7 @@ STATIC_DIR = os.path.join(BASE_DIR, "static")
 os.makedirs(STATIC_DIR, exist_ok=True)
 
 # Download model files from HF Hub on first boot if not present
-HF_REPO   = "Sbhat2026/protfunc-models"
+HF_REPO   = "SBhat2026/protfunc-models"
 HF_FILES  = ["supp_res2.pth", "mlb_public_v1.pkl", "go_annotations_fixed.csv"]
 
 def ensure_model_files():
@@ -89,8 +89,9 @@ class RecoveredBaselineModel(nn.Module):
 
 device = torch.device("cpu")
 model  = RecoveredBaselineModel().to(device)
-model.load_state_dict(torch.load(
-    os.path.join(BASE_DIR, "supp_res2.pth"), map_location=device))
+ckpt = torch.load(os.path.join(BASE_DIR, "supp_res2.pth"), map_location=device)
+sd   = ckpt["model"] if isinstance(ckpt, dict) and "model" in ckpt else ckpt
+model.load_state_dict(sd)
 model.eval()
 
 esm_model, alphabet = esm.pretrained.esm2_t6_8M_UR50D()
