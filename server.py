@@ -21,7 +21,7 @@ os.makedirs(STATIC_DIR, exist_ok=True)
 
 # Download model files from HF Hub on first boot if not present
 HF_REPO   = "SBhat2026/protfunc-models"
-HF_FILES  = ["supp_res2.pth", "mlb_public_v1.pkl", "go_annotations_fixed.csv"]
+HF_FILES  = ["baseline_res.pth", "mlb_public_v1.pkl", "go_annotations_fixed.csv"]
 
 def ensure_model_files():
     missing = [f for f in HF_FILES if not os.path.exists(os.path.join(BASE_DIR, f))]
@@ -70,27 +70,26 @@ thresholds_path = os.path.join(BASE_DIR, "artifacts", "per_label_thresholds.json
 thresholds = json.load(open(thresholds_path)) if os.path.exists(thresholds_path) else {}
 
 # Model
-class RecoveredBaselineModel(nn.Module):
+class ResidualMLP(nn.Module):
     def __init__(self, input_dim=320, hidden_dim=1024, output_dim=NUM_LABELS, dropout=0.2):
         super().__init__()
-        self.fc1  = nn.Linear(input_dim, hidden_dim)
-        self.proj = nn.Linear(input_dim, hidden_dim)
-        self.fc2  = nn.Linear(hidden_dim, hidden_dim)
-        self.out  = nn.Linear(hidden_dim, output_dim)
-        self.relu = nn.ReLU()
-        self.drop = nn.Dropout(dropout)
+        self.fc_in  = nn.Linear(input_dim, hidden_dim)
+        self.block1 = nn.Sequential(nn.ReLU(), nn.Dropout(dropout), nn.Linear(hidden_dim, hidden_dim))
+        self.block2 = nn.Sequential(nn.ReLU(), nn.Dropout(dropout), nn.Linear(hidden_dim, hidden_dim))
+        self.proj1  = nn.Identity()
+        self.proj2  = nn.Identity()
+        self.fc_out = nn.Sequential(nn.ReLU(), nn.Dropout(dropout), nn.Linear(hidden_dim, output_dim))
 
     def forward(self, x):
-        h = self.relu(self.fc1(x))
-        h = h + self.proj(x)
-        h = self.relu(self.fc2(h))
-        h = self.drop(h)
-        return self.out(h)
+        h = torch.relu(self.fc_in(x))
+        h = h + self.block1(h)
+        h = h + self.block2(h)
+        return self.fc_out(h)
 
 device = torch.device("cpu")
-model  = RecoveredBaselineModel().to(device)
-ckpt = torch.load(os.path.join(BASE_DIR, "supp_res2.pth"), map_location=device)
-sd   = ckpt["model"] if isinstance(ckpt, dict) and "model" in ckpt else ckpt
+model = ResidualMLP().to(device)
+ckpt  = torch.load(os.path.join(BASE_DIR, "baseline_res.pth"), map_location=device)
+sd    = ckpt["model"] if isinstance(ckpt, dict) and "model" in ckpt else ckpt
 model.load_state_dict(sd)
 model.eval()
 
