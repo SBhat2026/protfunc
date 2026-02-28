@@ -70,7 +70,7 @@ thresholds_path = os.path.join(BASE_DIR, "artifacts", "per_label_thresholds.json
 thresholds = json.load(open(thresholds_path)) if os.path.exists(thresholds_path) else {}
 
 # Model
-class ResidualMLP(nn.Module):
+class RecoveredBaselineModel(nn.Module):
     def __init__(self, input_dim=320, hidden_dim=1024, output_dim=NUM_LABELS, dropout=0.2):
         super().__init__()
         self.fc_in  = nn.Linear(input_dim, hidden_dim)
@@ -87,7 +87,7 @@ class ResidualMLP(nn.Module):
         return self.fc_out(h)
 
 device = torch.device("cpu")
-model = ResidualMLP().to(device)
+model = RecoveredBaselineModel().to(device)
 ckpt  = torch.load(os.path.join(BASE_DIR, "baseline_res.pth"), map_location=device)
 sd    = ckpt["model"] if isinstance(ckpt, dict) and "model" in ckpt else ckpt
 model.load_state_dict(sd)
