@@ -19,9 +19,9 @@ BASE_DIR   = os.path.dirname(os.path.abspath(__file__))
 STATIC_DIR = os.path.join(BASE_DIR, "static")
 os.makedirs(STATIC_DIR, exist_ok=True)
 
-# Download model files from HF Hub on first boot if not present
-HF_REPO   = "SBhat2026/protfunc-models"
-HF_FILES  = ["baseline_res.pth", "mlb_public_v1.pkl", "go_annotations_fixed.csv"]
+# ── Download model files from HF on first boot ────────────────────────────────
+HF_REPO  = "Sbhat2026/protfunc-models"   # exact case matters
+HF_FILES = ["baseline_res.pth", "mlb_public_v1.pkl", "go_annotations_fixed.csv"]
 
 def ensure_model_files():
     missing = [f for f in HF_FILES if not os.path.exists(os.path.join(BASE_DIR, f))]
@@ -31,8 +31,11 @@ def ensure_model_files():
     from huggingface_hub import hf_hub_download
     for fname in missing:
         print(f"  {fname}...")
-        path = hf_hub_download(repo_id=HF_REPO, filename=fname,
-                               local_dir=BASE_DIR, repo_type="model")
+        path = hf_hub_download(
+            repo_id=HF_REPO, filename=fname,
+            local_dir=BASE_DIR, repo_type="model",
+            token=os.environ.get("HF_TOKEN"),
+        )
         print(f"  saved to {path}")
 
 ensure_model_files()
@@ -45,12 +48,10 @@ app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 async def root():
     return FileResponse(os.path.join(STATIC_DIR, "interface.html"))
 
-# GO map
-CSV_PATH = os.path.join(BASE_DIR, "go_annotations_fixed.csv")
-
+# ── GO map ────────────────────────────────────────────────────────────────────
 def load_go_map():
     try:
-        df = pd.read_csv(CSV_PATH)
+        df = pd.read_csv(os.path.join(BASE_DIR, "go_annotations_fixed.csv"))
         mapping = {}
         for _, row in df.iterrows():
             go_id    = str(row["GO Annotation"]).strip()
@@ -62,14 +63,25 @@ def load_go_map():
         print(f"GO map error: {e}")
         return {}
 
-go_map = load_go_map()
-mlb    = joblib.load(os.path.join(BASE_DIR, "mlb_public_v1.pkl"))
+go_map     = load_go_map()
+mlb        = joblib.load(os.path.join(BASE_DIR, "mlb_public_v1.pkl"))
 NUM_LABELS = len(mlb.classes_)
 
-thresholds_path = os.path.join(BASE_DIR, "artifacts", "per_label_thresholds.json")
-thresholds = json.load(open(thresholds_path)) if os.path.exists(thresholds_path) else {}
+# Thresholds — check multiple locations, fall back to 0.5
+def load_thresholds():
+    for path in [
+        os.path.join(BASE_DIR, "per_label_thresholds.json"),
+        os.path.join(BASE_DIR, "artifacts", "per_label_thresholds.json"),
+    ]:
+        if os.path.exists(path):
+            print(f"Thresholds loaded from {path}")
+            return json.load(open(path))
+    print("Thresholds not found — using 0.5")
+    return {}
 
-# Model
+thresholds = load_thresholds()
+
+# ── Model — matches baseline_res.pth keys (fc1/proj/fc2/out) ─────────────────
 class RecoveredBaselineModel(nn.Module):
     def __init__(self, input_dim=320, hidden_dim=1024, output_dim=NUM_LABELS, dropout=0.2):
         super().__init__()
@@ -88,16 +100,19 @@ class RecoveredBaselineModel(nn.Module):
         return self.out(h)
 
 device = torch.device("cpu")
-model = RecoveredBaselineModel().to(device)
-ckpt  = torch.load(os.path.join(BASE_DIR, "baseline_res.pth"), map_location=device)
-sd    = ckpt["model"] if isinstance(ckpt, dict) and "model" in ckpt else ckpt
+model  = RecoveredBaselineModel().to(device)
+ckpt   = torch.load(os.path.join(BASE_DIR, "baseline_res.pth"), map_location=device)
+sd     = ckpt["model"] if isinstance(ckpt, dict) and "model" in ckpt else ckpt
 model.load_state_dict(sd)
 model.eval()
+print("Model loaded OK")
 
 esm_model, alphabet = esm.pretrained.esm2_t6_8M_UR50D()
 esm_model = esm_model.to(device).eval()
 batch_converter = alphabet.get_batch_converter()
+print("ESM-2 loaded OK")
 
+# ── Inference ─────────────────────────────────────────────────────────────────
 class ProteinRequest(BaseModel):
     sequence: str
 
@@ -150,4 +165,4 @@ async def predict(request: ProteinRequest):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=7860)
