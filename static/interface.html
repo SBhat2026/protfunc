@@ -161,6 +161,16 @@
     .seq-error { font-size: 0.8rem; color: var(--low-text); font-weight: 500; }
     .empty-state { text-align: center; color: var(--text-muted); font-size: 0.9rem; padding: 32px; }
 
+    /* Demo sequences */
+    .demo-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .demo-label { font-size: 0.72rem; font-weight: 500; color: var(--text-muted); letter-spacing: 0.04em; text-transform: uppercase; flex-shrink: 0; }
+    .demo-btn { font-size: 0.72rem; font-weight: 500; color: var(--accent); background: var(--accent-dim); border: 1px solid transparent; border-radius: 6px; padding: 3px 10px; cursor: pointer; transition: background 0.15s, border-color 0.15s; }
+    .demo-btn:hover { background: var(--accent); color: #fff; }
+
+    /* GO ID links */
+    .pred-goid a { color: var(--text-muted); text-decoration: none; transition: color 0.15s; }
+    .pred-goid a:hover { color: var(--accent); text-decoration: underline; }
+
     @media (max-width: 540px) {
       .layout { padding: 32px 16px 60px; gap: 20px; }
       .hero-title { font-size: 1.8rem; }
@@ -226,6 +236,13 @@
       <div class="card-label">
         <span>Amino Acid Sequence</span>
         <span class="char-count" id="charCount">0 aa</span>
+      </div>
+      <div class="demo-bar">
+        <span class="demo-label">Try</span>
+        <button class="demo-btn" onclick="loadDemo('p53')">Human p53</button>
+        <button class="demo-btn" onclick="loadDemo('insulin')">Human Insulin</button>
+        <button class="demo-btn" onclick="loadDemo('brca1')">BRCA1</button>
+        <button class="demo-btn" onclick="loadDemo('kinase')">PKA Kinase</button>
       </div>
       <textarea id="sequenceInput" class="seq-textarea"
         placeholder=">MyProtein&#10;MKTIIALSYIFCLVFA..."
@@ -350,7 +367,7 @@
             <div class="pred-row ${confClass(p.prob)}">
               <div class="pred-main">
                 <span class="pred-name">${escHtml(p.name)}</span>
-                <span class="pred-goid">${escHtml(p.go_id)}</span>
+                <span class="pred-goid"><a href="https://amigo.geneontology.org/amigo/term/${escHtml(p.go_id)}" target="_blank" rel="noopener">${escHtml(p.go_id)}</a></span>
               </div>
               <div class="pred-right">
                 <span class="pred-conf-label">${confLabel(p.prob)}</span>
@@ -373,6 +390,27 @@
             <div class="pred-list">${predHTML}</div>
           </div>`;
       }).join('');
+    }
+
+    // ── Demo sequences ────────────────────────────────────────────────────
+    const DEMOS = {
+      p53: `>Human_TP53_p53
+MEEPQSDPSVEPPLSQETFSDLWKLLPENNVLSPLPSQAMDDLMLSPDDIEQWFTEDPGPDEAPRMPEAAPPVAPAPAAPTPAAPAPAPSWPLSSSVPSQKTYPQGLNGTVNLFRNLNKLFQESSADQANKNAAAKQKKVQVEVSSSPNASPIVLQVEEGGEENQNQSTDNQSAAQKHQLEESGQLQPQQGSAVLQQLQNMISTTTASMQEDQDSFHIQRLEREGEAQEFLMKSSEGDAFEPIHQEIEAEIEAQRHEQMAESEEAFGDLIQNLQQTQDEREETRQNQALQQ`,
+      insulin: `>Human_Insulin_preproprotein
+MALWMRLLPLLALLALWGPDPAAAFVNQHLCGSHLVEALYLVCGERGFFYTPKTRREAEDLQVGQVELGGGPGAGSLQPLALEGSLQKRGIVEQCCTSICSLYQLENYCN`,
+      brca1: `>Human_BRCA1_fragment
+MDLSALRVEEVQNVINAMQKILECPICLELIKEPVSTKCDHIFCKFCMLKLLNQKKGPSQCPLCKNDITKRSLQESTRFSQLVEELLKIICAFQLDTGLEYANSYNFAKKENNSPEHLKDEVSIIQSMGYRNACKESSLSSSGESSATSQQTVCSPQQKSSRAEGNKEQLSTRIDTMSQQLEQPASQSSQLNREQASATSSNQPTQQNQPQHQQSSISSQNQQQQPTQHQNQILQQAQQQIQSQPPTQVQTNQTTTINNHTQSQHRPQISTSNLATQQPQQPTPNRSQNQASSS`,
+      kinase: `>Human_PRKACA_cAMP_dependent_protein_kinase
+MGNAAAAKKGSEQESVKEFLAKAKEDFLKKWESPAQNTAHLDQFERIKTLGTGSFGRVMLVKHKETGNHYAMKILDKQKVVKLKQIEHTLNEKRILQAVNFPFLVKLEFSFKDNSNLYMVMEYVPGGEMFSHLRRIGRFSEPHARFYAAQIVLTFEYLHSLDLIYRDLKPENLLIDQQGYIQVTDFGFAKRVKGRTWTLCGTPEYLAPEIILSKGYNKAVDWWALGVLIYEMAAGYPPFFADQPIQIYEKIVSGKVRFPSHFSSDLKDLLRNLLQVDLTKRFGNLKNGVNDIKNHKWFATTDWIAIYQRKVEAPFIPKFKGPGDTSNFDDYEEEEIRVINEKCGKEFSEF`
+    };
+
+    function loadDemo(key) {
+      const seq = DEMOS[key];
+      if (!seq) return;
+      ta.value = seq;
+      const aa = seq.replace(/>/g,'').replace(/[^A-Za-z]/g,'');
+      cc.textContent = aa.length ? \`\${aa.length.toLocaleString()} aa\` : '0 aa';
+      ta.focus();
     }
 
     function shake() {

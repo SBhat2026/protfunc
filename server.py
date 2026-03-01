@@ -21,9 +21,11 @@ os.makedirs(STATIC_DIR, exist_ok=True)
 
 # ── Download model files from HF on first boot ────────────────────────────────
 HF_REPO  = "Sbhat2026/protfunc-models"   # exact case matters
-HF_FILES = ["baseline_res.pth", "mlb_public_v1.pkl", "go_annotations_fixed.csv"]
+HF_FILES = ["baseline_res.pth", "mlb_public_v1.pkl", "go_annotations_fixed.csv", "go_names.json"]
 
 def ensure_model_files():
+    # go_names.json is optional — skip if not yet on HF
+    optional = {"go_names.json"}
     missing = [f for f in HF_FILES if not os.path.exists(os.path.join(BASE_DIR, f))]
     if not missing:
         return
@@ -64,6 +66,12 @@ def load_go_map():
         return {}
 
 go_map     = load_go_map()
+
+# Override with canonical GO names from QuickGO if available
+go_names_path = os.path.join(BASE_DIR, "go_names.json")
+if os.path.exists(go_names_path):
+    go_map.update(json.load(open(go_names_path)))
+    print(f"Canonical GO names loaded: {len(go_map)} entries")
 mlb        = joblib.load(os.path.join(BASE_DIR, "mlb_public_v1.pkl"))
 NUM_LABELS = len(mlb.classes_)
 
