@@ -409,7 +409,7 @@ MGNAAAAKKGSEQESVKEFLAKAKEDFLKKWESPAQNTAHLDQFERIKTLGTGSFGRVMLVKHKETGNHYAMKILDKQKV
       if (!seq) return;
       ta.value = seq;
       const aa = seq.replace(/>/g,'').replace(/[^A-Za-z]/g,'');
-      cc.textContent = aa.length ? \`\${aa.length.toLocaleString()} aa\` : '0 aa';
+      cc.textContent = aa.length ? `${aa.length.toLocaleString()} aa` : '0 aa';
       ta.focus();
     }
 
