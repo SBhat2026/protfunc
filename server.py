@@ -67,11 +67,26 @@ def load_go_map():
 
 go_map     = load_go_map()
 
+# Build MF-only whitelist from go_names.json aspect data (populated after fetch)
+# Falls back to allowing all labels if not available
+mf_indices = None  # set below after go_names loaded
+
 # Override with canonical GO names from QuickGO if available
 go_names_path = os.path.join(BASE_DIR, "go_names.json")
 if os.path.exists(go_names_path):
     go_map.update(json.load(open(go_names_path)))
     print(f"Canonical GO names loaded: {len(go_map)} entries")
+
+# Build index whitelist: only predict labels that are MF terms
+# go_names.json maps GO ID -> name; non-MF terms were stored as raw GO ID (e.g. "GO:0005886")
+# We identify MF terms as those whose name != their GO ID (i.e. successfully resolved)
+mf_go_ids = {go_id for go_id, name in go_map.items() if name != go_id and not name.startswith("GO:")}
+if mf_go_ids:
+    mf_indices = {i for i, go_id in enumerate(mlb.classes_) if go_id in mf_go_ids}
+    print(f"MF-only filter: {len(mf_indices)} labels")
+else:
+    mf_indices = None
+    print("MF filter not applied (go_names.json not loaded)")
 mlb        = joblib.load(os.path.join(BASE_DIR, "mlb_public_v1.pkl"))
 NUM_LABELS = len(mlb.classes_)
 
@@ -158,7 +173,9 @@ async def predict(request: ProteinRequest):
             if prob.dim() == 0:
                 prob = prob.unsqueeze(0)
             preds = []
-            for i, p in enumerate(prob):
+            active = mf_indices if mf_indices else range(len(mlb.classes_))
+            for i in active:
+                p = prob[i]
                 pv = float(p)
                 if pv >= float(thresholds.get(str(i), 0.5)):
                     go_id = mlb.classes_[i]
