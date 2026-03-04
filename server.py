@@ -80,8 +80,6 @@ if os.path.exists(go_names_path):
 # Build index whitelist: only predict labels that are MF terms
 # go_names.json maps GO ID -> name; non-MF terms were stored as raw GO ID (e.g. "GO:0005886")
 # We identify MF terms as those whose name != their GO ID (i.e. successfully resolved)
-mlb        = joblib.load(os.path.join(BASE_DIR, "mlb_public_v1.pkl"))
-NUM_LABELS = len(mlb.classes_)
 mf_go_ids = {go_id for go_id, name in go_map.items() if name != go_id and not name.startswith("GO:")}
 if mf_go_ids:
     mf_indices = {i for i, go_id in enumerate(mlb.classes_) if go_id in mf_go_ids}
@@ -89,6 +87,8 @@ if mf_go_ids:
 else:
     mf_indices = None
     print("MF filter not applied (go_names.json not loaded)")
+mlb        = joblib.load(os.path.join(BASE_DIR, "mlb_public_v1.pkl"))
+NUM_LABELS = len(mlb.classes_)
 
 # Thresholds — check multiple locations, fall back to 0.5
 def load_thresholds():
@@ -139,6 +139,24 @@ print("ESM-2 loaded OK")
 class ProteinRequest(BaseModel):
     sequence: str
 
+VALID_AA   = set('ACDEFGHIKLMNPQRSTVWY')
+INVALID_AA = set('BJOUXY Z')  # ambiguous or non-standard single-letter codes
+
+def clean_sequence(raw):
+    """Uppercase, strip all non-alpha characters, return cleaned string."""
+    return re.sub(r'[^A-Za-z]', '', raw).upper()
+
+def validate_sequence(seq, name):
+    """Return error string if invalid, else None."""
+    if not seq:
+        return "Empty sequence"
+    if len(seq) > 2500:
+        return f"Sequence too long ({len(seq):,} aa, max 2500)"
+    invalid = sorted(set(seq) - VALID_AA)
+    if invalid:
+        return f"Invalid amino acid characters: {', '.join(invalid)} — only standard 20 AA accepted"
+    return None
+
 def parse_sequences(text):
     text = text.strip()
     if text.startswith(">"):
@@ -147,13 +165,15 @@ def parse_sequences(text):
         i = 1
         while i < len(blocks):
             name = blocks[i][1:].strip()
-            seq  = re.sub(r"\s+", "", blocks[i+1]) if i+1 < len(blocks) else ""
+            raw  = blocks[i+1] if i+1 < len(blocks) else ""
+            seq  = clean_sequence(raw)
             if seq:
-                names.append(name)
+                names.append(name or f"Sequence {len(names)+1}")
                 seqs.append(seq)
             i += 2
         return list(zip(names, seqs))
-    seqs = [l.strip() for l in text.splitlines() if l.strip()]
+    seqs = [clean_sequence(l) for l in text.splitlines() if l.strip()]
+    seqs = [s for s in seqs if s]
     return [(f"Sequence {i+1}", s) for i, s in enumerate(seqs)]
 
 @app.post("/predict")
@@ -161,8 +181,222 @@ async def predict(request: ProteinRequest):
     entries = parse_sequences(request.sequence)
     results = []
     for name, sequence in entries:
-        if len(sequence) > 2500:
-            results.append({"name": name, "error": "Sequence too long (max 2500 aa)"})
+        err = validate_sequence(sequence, name)
+        if err:
+            results.append({"name": name, "error": err})
+            continue
+        try:
+            _, _, tokens = batch_converter([("p", sequence)])
+            with torch.no_grad():
+                rep  = esm_model(tokens.to(device), repr_layers=[6])["representations"][6]
+                emb  = rep[0, 1:len(sequence)+1].mean(0)
+                prob = torch.sigmoid(model(emb.unsqueeze(0))).squeeze()
+            if prob.dim() == 0:
+                prob = prob.unsqueeze(0)
+            preds = []
+            active = mf_indices if mf_indices else range(len(mlb.classes_))
+            for i in active:
+                p = prob[i]
+                pv = float(p)
+                if pv >= float(thresholds.get(str(i), 0.5)):
+                    go_id = mlb.classes_[i]
+                    preds.append({"go_id": go_id, "name": go_map.get(go_id, go_id),
+                                  "prob": round(pv, 3)})
+            preds = sorted(preds, key=lambda x: x["prob"], reverse=True)[:12]
+            results.append({"name": name, "sequence_length": len(sequence),
+                            "predictions": preds, "n_above_threshold": len(preds)})
+        except Exception as e:
+            results.append({"name": name, "error": str(e)})
+    return {"results": results}
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=7860)from fastapi import FastAPI
+from fastapi.responses import FileResponse
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
+import torch
+import torch.nn as nn
+import pandas as pd
+import esm
+import joblib
+import json
+import os
+import re
+import warnings
+
+warnings.filterwarnings("ignore")
+
+BASE_DIR   = os.path.dirname(os.path.abspath(__file__))
+STATIC_DIR = os.path.join(BASE_DIR, "static")
+os.makedirs(STATIC_DIR, exist_ok=True)
+
+# ── Download model files from HF on first boot ────────────────────────────────
+HF_REPO  = "Sbhat2026/protfunc-models"   # exact case matters
+HF_FILES = ["baseline_res.pth", "mlb_public_v1.pkl", "go_annotations_fixed.csv", "go_names.json"]
+
+def ensure_model_files():
+    # go_names.json is optional — skip if not yet on HF
+    optional = {"go_names.json"}
+    missing = [f for f in HF_FILES if not os.path.exists(os.path.join(BASE_DIR, f))]
+    if not missing:
+        return
+    print(f"Downloading {len(missing)} file(s) from HuggingFace...")
+    from huggingface_hub import hf_hub_download
+    for fname in missing:
+        print(f"  {fname}...")
+        path = hf_hub_download(
+            repo_id=HF_REPO, filename=fname,
+            local_dir=BASE_DIR, repo_type="model",
+            token=os.environ.get("HF_TOKEN"),
+        )
+        print(f"  saved to {path}")
+
+ensure_model_files()
+
+app = FastAPI()
+app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+
+@app.get("/")
+async def root():
+    return FileResponse(os.path.join(STATIC_DIR, "interface.html"))
+
+# ── GO map ────────────────────────────────────────────────────────────────────
+def load_go_map():
+    try:
+        df = pd.read_csv(os.path.join(BASE_DIR, "go_annotations_fixed.csv"))
+        mapping = {}
+        for _, row in df.iterrows():
+            go_id    = str(row["GO Annotation"]).strip()
+            raw_name = str(row.get("Gene Ontology (molecular function)", "Unknown"))
+            mapping[go_id] = raw_name.split(" [")[0].strip()
+        print(f"GO map: {len(mapping)} labels")
+        return mapping
+    except Exception as e:
+        print(f"GO map error: {e}")
+        return {}
+
+go_map     = load_go_map()
+
+# Build MF-only whitelist from go_names.json aspect data (populated after fetch)
+# Falls back to allowing all labels if not available
+mf_indices = None  # set below after go_names loaded
+
+# Override with canonical GO names from QuickGO if available
+go_names_path = os.path.join(BASE_DIR, "go_names.json")
+if os.path.exists(go_names_path):
+    go_map.update(json.load(open(go_names_path)))
+    print(f"Canonical GO names loaded: {len(go_map)} entries")
+
+# Build index whitelist: only predict labels that are MF terms
+# go_names.json maps GO ID -> name; non-MF terms were stored as raw GO ID (e.g. "GO:0005886")
+# We identify MF terms as those whose name != their GO ID (i.e. successfully resolved)
+mf_go_ids = {go_id for go_id, name in go_map.items() if name != go_id and not name.startswith("GO:")}
+if mf_go_ids:
+    mf_indices = {i for i, go_id in enumerate(mlb.classes_) if go_id in mf_go_ids}
+    print(f"MF-only filter: {len(mf_indices)} labels")
+else:
+    mf_indices = None
+    print("MF filter not applied (go_names.json not loaded)")
+mlb        = joblib.load(os.path.join(BASE_DIR, "mlb_public_v1.pkl"))
+NUM_LABELS = len(mlb.classes_)
+
+# Thresholds — check multiple locations, fall back to 0.5
+def load_thresholds():
+    for path in [
+        os.path.join(BASE_DIR, "per_label_thresholds.json"),
+        os.path.join(BASE_DIR, "artifacts", "per_label_thresholds.json"),
+    ]:
+        if os.path.exists(path):
+            print(f"Thresholds loaded from {path}")
+            return json.load(open(path))
+    print("Thresholds not found — using 0.5")
+    return {}
+
+thresholds = load_thresholds()
+
+# ── Model — matches baseline_res.pth keys (fc1/proj/fc2/out) ─────────────────
+class RecoveredBaselineModel(nn.Module):
+    def __init__(self, input_dim=320, hidden_dim=1024, output_dim=NUM_LABELS, dropout=0.2):
+        super().__init__()
+        self.fc1  = nn.Linear(input_dim, hidden_dim)
+        self.proj = nn.Linear(input_dim, hidden_dim)
+        self.fc2  = nn.Linear(hidden_dim, hidden_dim)
+        self.out  = nn.Linear(hidden_dim, output_dim)
+        self.relu = nn.ReLU()
+        self.drop = nn.Dropout(dropout)
+
+    def forward(self, x):
+        h = self.relu(self.fc1(x))
+        h = h + self.proj(x)
+        h = self.relu(self.fc2(h))
+        h = self.drop(h)
+        return self.out(h)
+
+device = torch.device("cpu")
+model  = RecoveredBaselineModel().to(device)
+ckpt   = torch.load(os.path.join(BASE_DIR, "baseline_res.pth"), map_location=device)
+sd     = ckpt["model"] if isinstance(ckpt, dict) and "model" in ckpt else ckpt
+model.load_state_dict(sd)
+model.eval()
+print("Model loaded OK")
+
+esm_model, alphabet = esm.pretrained.esm2_t6_8M_UR50D()
+esm_model = esm_model.to(device).eval()
+batch_converter = alphabet.get_batch_converter()
+print("ESM-2 loaded OK")
+
+# ── Inference ─────────────────────────────────────────────────────────────────
+class ProteinRequest(BaseModel):
+    sequence: str
+
+VALID_AA   = set('ACDEFGHIKLMNPQRSTVWY')
+INVALID_AA = set('BJOUXY Z')  # ambiguous or non-standard single-letter codes
+
+def clean_sequence(raw):
+    """Uppercase, strip all non-alpha characters, return cleaned string."""
+    return re.sub(r'[^A-Za-z]', '', raw).upper()
+
+def validate_sequence(seq, name):
+    """Return error string if invalid, else None."""
+    if not seq:
+        return "Empty sequence"
+    if len(seq) > 2500:
+        return f"Sequence too long ({len(seq):,} aa, max 2500)"
+    invalid = sorted(set(seq) - VALID_AA)
+    if invalid:
+        return f"Invalid amino acid characters: {', '.join(invalid)} — only standard 20 AA accepted"
+    return None
+
+def parse_sequences(text):
+    text = text.strip()
+    if text.startswith(">"):
+        blocks = re.split(r"(>.*)", text)
+        names, seqs = [], []
+        i = 1
+        while i < len(blocks):
+            name = blocks[i][1:].strip()
+            raw  = blocks[i+1] if i+1 < len(blocks) else ""
+            seq  = clean_sequence(raw)
+            if seq:
+                names.append(name or f"Sequence {len(names)+1}")
+                seqs.append(seq)
+            i += 2
+        return list(zip(names, seqs))
+    seqs = [clean_sequence(l) for l in text.splitlines() if l.strip()]
+    seqs = [s for s in seqs if s]
+    return [(f"Sequence {i+1}", s) for i, s in enumerate(seqs)]
+
+@app.post("/predict")
+async def predict(request: ProteinRequest):
+    entries = parse_sequences(request.sequence)
+    results = []
+    for name, sequence in entries:
+        err = validate_sequence(sequence, name)
+        if err:
+            results.append({"name": name, "error": err})
             continue
         try:
             _, _, tokens = batch_converter([("p", sequence)])
