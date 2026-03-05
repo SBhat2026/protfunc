@@ -77,9 +77,8 @@ if os.path.exists(go_names_path):
     go_map.update(json.load(open(go_names_path)))
     print(f"Canonical GO names loaded: {len(go_map)} entries")
 
-# Build index whitelist: only predict labels that are MF terms
-# go_names.json maps GO ID -> name; non-MF terms were stored as raw GO ID (e.g. "GO:0005886")
-# We identify MF terms as those whose name != their GO ID (i.e. successfully resolved)
+mlb        = joblib.load(os.path.join(BASE_DIR, "mlb_public_v1.pkl"))
+NUM_LABELS = len(mlb.classes_)
 mf_go_ids = {go_id for go_id, name in go_map.items() if name != go_id and not name.startswith("GO:")}
 if mf_go_ids:
     mf_indices = {i for i, go_id in enumerate(mlb.classes_) if go_id in mf_go_ids}
@@ -87,8 +86,6 @@ if mf_go_ids:
 else:
     mf_indices = None
     print("MF filter not applied (go_names.json not loaded)")
-mlb        = joblib.load(os.path.join(BASE_DIR, "mlb_public_v1.pkl"))
-NUM_LABELS = len(mlb.classes_)
 
 # Thresholds — check multiple locations, fall back to 0.5
 def load_thresholds():
