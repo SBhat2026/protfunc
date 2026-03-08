@@ -24,21 +24,40 @@ HF_REPO  = "Sbhat2026/protfunc-models"   # exact case matters
 HF_FILES = ["baseline_res.pth", "mlb_public_v1.pkl", "go_annotations_fixed.csv", "go_names.json"]
 
 def ensure_model_files():
-    # go_names.json is optional — skip if not yet on HF
+    import time
+    from huggingface_hub import hf_hub_download
+
+    # go_names.json is optional — do not fail if absent from repo
     optional = {"go_names.json"}
     missing = [f for f in HF_FILES if not os.path.exists(os.path.join(BASE_DIR, f))]
     if not missing:
         return
+
     print(f"Downloading {len(missing)} file(s) from HuggingFace...")
-    from huggingface_hub import hf_hub_download
     for fname in missing:
-        print(f"  {fname}...")
-        path = hf_hub_download(
-            repo_id=HF_REPO, filename=fname,
-            local_dir=BASE_DIR, repo_type="model",
-            token=os.environ.get("HF_TOKEN"),
-        )
-        print(f"  saved to {path}")
+        # Retry with exponential back-off so DNS resolves after cold-start network delay
+        max_attempts = 5
+        for attempt in range(1, max_attempts + 1):
+            try:
+                print(f"  {fname}  (attempt {attempt}/{max_attempts})...")
+                path = hf_hub_download(
+                    repo_id=HF_REPO, filename=fname,
+                    local_dir=BASE_DIR, repo_type="model",
+                    token=os.environ.get("HF_TOKEN"),
+                )
+                print(f"  saved to {path}")
+                break
+            except Exception as e:
+                if fname in optional:
+                    print(f"  {fname} optional — skipping ({e})")
+                    break
+                if attempt == max_attempts:
+                    raise RuntimeError(
+                        f"Failed to download {fname} after {max_attempts} attempts: {e}"
+                    )
+                wait = 2 ** attempt  # 2s, 4s, 8s, 16s
+                print(f"  DNS/network error, retrying in {wait}s... ({e})")
+                time.sleep(wait)
 
 ensure_model_files()
 
@@ -67,6 +86,9 @@ def load_go_map():
 
 go_map     = load_go_map()
 
+mlb        = joblib.load(os.path.join(BASE_DIR, "mlb_public_v1.pkl"))
+NUM_LABELS = len(mlb.classes_)
+
 # Build MF-only whitelist from go_names.json aspect data (populated after fetch)
 # Falls back to allowing all labels if not available
 mf_indices = None  # set below after go_names loaded
@@ -77,8 +99,9 @@ if os.path.exists(go_names_path):
     go_map.update(json.load(open(go_names_path)))
     print(f"Canonical GO names loaded: {len(go_map)} entries")
 
-mlb        = joblib.load(os.path.join(BASE_DIR, "mlb_public_v1.pkl"))
-NUM_LABELS = len(mlb.classes_)
+# Build index whitelist: only predict labels that are MF terms
+# go_names.json maps GO ID -> name; non-MF terms were stored as raw GO ID (e.g. "GO:0005886")
+# We identify MF terms as those whose name != their GO ID (i.e. successfully resolved)
 mf_go_ids = {go_id for go_id, name in go_map.items() if name != go_id and not name.startswith("GO:")}
 if mf_go_ids:
     mf_indices = {i for i, go_id in enumerate(mlb.classes_) if go_id in mf_go_ids}
@@ -136,24 +159,6 @@ print("ESM-2 loaded OK")
 class ProteinRequest(BaseModel):
     sequence: str
 
-VALID_AA   = set('ACDEFGHIKLMNPQRSTVWY')
-INVALID_AA = set('BJOUXY Z')  # ambiguous or non-standard single-letter codes
-
-def clean_sequence(raw):
-    """Uppercase, strip all non-alpha characters, return cleaned string."""
-    return re.sub(r'[^A-Za-z]', '', raw).upper()
-
-def validate_sequence(seq, name):
-    """Return error string if invalid, else None."""
-    if not seq:
-        return "Empty sequence"
-    if len(seq) > 2500:
-        return f"Sequence too long ({len(seq):,} aa, max 2500)"
-    invalid = sorted(set(seq) - VALID_AA)
-    if invalid:
-        return f"Invalid amino acid characters: {', '.join(invalid)} — only standard 20 AA accepted"
-    return None
-
 def parse_sequences(text):
     text = text.strip()
     if text.startswith(">"):
@@ -162,15 +167,13 @@ def parse_sequences(text):
         i = 1
         while i < len(blocks):
             name = blocks[i][1:].strip()
-            raw  = blocks[i+1] if i+1 < len(blocks) else ""
-            seq  = clean_sequence(raw)
+            seq  = re.sub(r"\s+", "", blocks[i+1]) if i+1 < len(blocks) else ""
             if seq:
-                names.append(name or f"Sequence {len(names)+1}")
+                names.append(name)
                 seqs.append(seq)
             i += 2
         return list(zip(names, seqs))
-    seqs = [clean_sequence(l) for l in text.splitlines() if l.strip()]
-    seqs = [s for s in seqs if s]
+    seqs = [l.strip() for l in text.splitlines() if l.strip()]
     return [(f"Sequence {i+1}", s) for i, s in enumerate(seqs)]
 
 @app.post("/predict")
@@ -178,9 +181,8 @@ async def predict(request: ProteinRequest):
     entries = parse_sequences(request.sequence)
     results = []
     for name, sequence in entries:
-        err = validate_sequence(sequence, name)
-        if err:
-            results.append({"name": name, "error": err})
+        if len(sequence) > 2500:
+            results.append({"name": name, "error": "Sequence too long (max 2500 aa)"})
             continue
         try:
             _, _, tokens = batch_converter([("p", sequence)])
