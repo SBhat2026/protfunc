@@ -9,6 +9,7 @@ import torch.nn as nn
 import pandas as pd
 import joblib
 import json
+import math
 import os
 import re
 import time
@@ -30,9 +31,19 @@ esm_model       = None
 batch_converter = None
 mlb             = None
 go_map          = {}
+mf_terms        = set()   # GO IDs with namespace == molecular_function (from OBO)
+go_parents      = {}      # GO ID -> set of direct parent GO IDs (MF DAG only)
 mf_indices      = None
 thresholds      = {}
 NUM_LABELS      = 0
+
+# Biological complexity filter constants
+MIN_SEQ_LENGTH    = 30
+MIN_ENTROPY_BITS  = 2.5
+MAX_DOMINANT_FRAC = 0.60
+MIN_DISTINCT_AA   = 5
+INVALID_AA        = set("BJOUXZ")
+MF_ROOT           = "GO:0003674"
 
 
 def _download_with_retry(fname):
@@ -96,12 +107,141 @@ def load_thresholds():
     return {}
 
 
+def parse_obo(path):
+    """
+    Parse go-basic.obo and return:
+        mf_terms   : set of GO IDs with namespace == molecular_function
+        go_parents : dict mapping each MF GO ID -> set of direct parent GO IDs
+                     (only is_a and part_of edges, restricted to MF namespace)
+    """
+    ns_map  = {}
+    par_map = {}
+    cur_id  = None
+    cur_ns  = None
+    cur_par = set()
+    in_term = False
+
+    def flush():
+        nonlocal cur_id, cur_ns, cur_par
+        if cur_id and cur_ns:
+            ns_map[cur_id]  = cur_ns
+            par_map[cur_id] = cur_par
+        cur_id  = None
+        cur_ns  = None
+        cur_par = set()
+
+    with open(path, "r", encoding="utf-8") as fh:
+        for raw in fh:
+            line = raw.strip()
+            if line == "[Term]":
+                flush()
+                in_term = True
+                continue
+            if line.startswith("[") and line != "[Term]":
+                flush()
+                in_term = False
+                continue
+            if not in_term:
+                continue
+            if line.startswith("id:"):
+                cur_id = line.split("id:", 1)[1].strip().split()[0]
+            elif line.startswith("namespace:"):
+                cur_ns = line.split("namespace:", 1)[1].strip()
+            elif line.startswith("is_obsolete:") and "true" in line:
+                cur_id = None
+            elif line.startswith("is_a:"):
+                parent = line.split("is_a:", 1)[1].strip().split()[0]
+                cur_par.add(parent)
+            elif line.startswith("relationship:"):
+                parts = line.split("relationship:", 1)[1].strip().split()
+                if len(parts) >= 2 and parts[0] == "part_of":
+                    cur_par.add(parts[1])
+    flush()
+
+    mf = {gid for gid, n in ns_map.items() if n == "molecular_function"}
+    go_parents_mf = {gid: (parents & mf) for gid, parents in par_map.items() if gid in mf}
+    n_edges = sum(len(v) for v in go_parents_mf.values())
+    print(f"OBO parsed: {len(mf)} MF terms, {n_edges} parent edges")
+    return mf, go_parents_mf
+
+
+def apply_hierarchy_filter(preds, go_parents_map):
+    """
+    Split predictions into (visible, suppressed).
+    A prediction is suppressed when it has at least one direct MF parent
+    but none of those parents appear in the predicted set.
+    The MF root and terms with no MF parents are always visible.
+    """
+    if not go_parents_map:
+        return preds, []
+
+    predicted_ids = {p["go_id"] for p in preds}
+    visible    = []
+    suppressed = []
+
+    for pred in preds:
+        gid     = pred["go_id"]
+        parents = go_parents_map.get(gid, set())
+        if gid == MF_ROOT or not parents:
+            visible.append(pred)
+        elif parents & predicted_ids:
+            visible.append(pred)
+        else:
+            suppressed.append(pred)
+
+    return visible, suppressed
+
+
+def sequence_entropy(seq):
+    seq_upper = seq.upper()
+    counts = {}
+    for aa in seq_upper:
+        counts[aa] = counts.get(aa, 0) + 1
+    n = len(seq_upper)
+    return -sum((c / n) * math.log2(c / n) for c in counts.values())
+
+
+def validate_sequence(name, seq):
+    """Returns an error string if the sequence should be rejected, else None."""
+    if len(seq) < MIN_SEQ_LENGTH:
+        return (f"'{name}' is too short ({len(seq)} aa — minimum {MIN_SEQ_LENGTH} aa). "
+                f"Sequences this short are unlikely to fold into a stable domain.")
+
+    bad = sorted({c.upper() for c in seq if c.upper() in INVALID_AA})
+    if bad:
+        return (f"'{name}' contains invalid amino acid character(s): "
+                f"{', '.join(bad)}. These ambiguity codes are not accepted.")
+
+    counts = {}
+    for aa in seq.upper():
+        counts[aa] = counts.get(aa, 0) + 1
+
+    if len(counts) < MIN_DISTINCT_AA:
+        return (f"'{name}' uses only {len(counts)} distinct residue type(s). "
+                f"Real proteins require at least {MIN_DISTINCT_AA}.")
+
+    dominant_frac = max(counts.values()) / len(seq)
+    if dominant_frac > MAX_DOMINANT_FRAC:
+        dominant_aa = max(counts, key=counts.get)
+        return (f"'{name}' is dominated by a single residue "
+                f"({dominant_aa} = {dominant_frac:.0%}). "
+                f"Low-complexity sequences produce unreliable embeddings.")
+
+    H = sequence_entropy(seq)
+    if H < MIN_ENTROPY_BITS:
+        return (f"'{name}' has very low sequence complexity "
+                f"(Shannon entropy {H:.2f} bits, minimum {MIN_ENTROPY_BITS:.1f} bits). "
+                f"Repetitive or artificially constructed sequences are not accepted.")
+
+    return None
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global model, esm_model, batch_converter
-    global mlb, go_map, mf_indices, thresholds, NUM_LABELS
+    global mlb, go_map, mf_terms, go_parents, mf_indices, thresholds, NUM_LABELS
 
-    # Step 1: download missing files (network is ready here, unlike module load time)
+    # Step 1: download missing files
     ensure_model_files()
 
     # Step 2: GO name map
@@ -116,29 +256,59 @@ async def lifespan(app: FastAPI):
     NUM_LABELS = len(mlb.classes_)
     print(f"MLB loaded: {NUM_LABELS} labels")
 
-    # Step 4: MF-only whitelist (mlb is now defined)
-    mf_go_ids = {
-        go_id for go_id, name in go_map.items()
-        if name != go_id and not name.startswith("GO:")
-    }
-    if mf_go_ids:
-        mf_indices = {i for i, go_id in enumerate(mlb.classes_) if go_id in mf_go_ids}
-        print(f"MF-only filter: {len(mf_indices)} labels active")
+    # Step 4: OBO — parse MF namespace and parent DAG
+    obo_path = os.path.join(BASE_DIR, "go-basic.obo")
+    if os.path.exists(obo_path):
+        mf_terms, go_parents = parse_obo(obo_path)
+        mf_in_mlb = sum(1 for gid in mlb.classes_ if gid in mf_terms)
+        print(f"OBO cross-check: {mf_in_mlb}/{NUM_LABELS} MLB labels are MF namespace")
     else:
-        mf_indices = None
-        print("MF filter not applied (go_names.json absent or empty)")
+        print("WARNING: go-basic.obo not found — hierarchy filtering disabled. "
+              "Download from https://current.geneontology.org/ontology/go-basic.obo "
+              "and place it alongside server.py.")
 
-    # Step 5: per-label thresholds
+    # Step 5: MF-only whitelist — OBO namespace is authoritative, CSV is fallback
+    if mf_terms:
+        mf_indices = [i for i, gid in enumerate(mlb.classes_) if gid in mf_terms]
+        print(f"MF whitelist (OBO): {len(mf_indices)} active indices")
+    else:
+        mf_go_ids = {
+            go_id for go_id, name in go_map.items()
+            if name and name != go_id and not name.startswith("GO:")
+        }
+        mf_indices = [i for i, gid in enumerate(mlb.classes_) if gid in mf_go_ids] or list(range(NUM_LABELS))
+        print(f"MF whitelist (CSV fallback): {len(mf_indices)} active indices")
+
+    app.state.mf_indices = mf_indices
+
+    # Step 6: per-label thresholds
     thresholds = load_thresholds()
 
-    # Step 6: classifier
-    class RecoveredBaselineModel(nn.Module):
-        def __init__(self, input_dim=320, hidden_dim=1024, output_dim=NUM_LABELS, dropout=0.2):
+    # Step 7: classifier — auto-detect architecture from checkpoint keys
+    class ResidualMLP(nn.Module):
+        """Matches General_Pipeline.ipynb — two skip-connection blocks."""
+        def __init__(self, in_dim=320, out_dim=NUM_LABELS, hidden=1024, dropout=0.2):
             super().__init__()
-            self.fc1  = nn.Linear(input_dim, hidden_dim)
-            self.proj = nn.Linear(input_dim, hidden_dim)
-            self.fc2  = nn.Linear(hidden_dim, hidden_dim)
-            self.out  = nn.Linear(hidden_dim, output_dim)
+            self.fc_in  = nn.Linear(in_dim, hidden)
+            self.block1 = nn.Sequential(nn.ReLU(), nn.Dropout(dropout), nn.Linear(hidden, hidden))
+            self.block2 = nn.Sequential(nn.ReLU(), nn.Dropout(dropout), nn.Linear(hidden, hidden))
+            self.fc_out = nn.Sequential(nn.ReLU(), nn.Dropout(dropout), nn.Linear(hidden, out_dim))
+
+        def forward(self, x):
+            h = self.fc_in(x)
+            h = torch.relu(h)
+            h = h + self.block1(h)
+            h = h + self.block2(h)
+            return self.fc_out(h)
+
+    class RecoveredBaselineModel(nn.Module):
+        """Earlier server-side architecture — retained for backward compatibility."""
+        def __init__(self, in_dim=320, out_dim=NUM_LABELS, hidden=1024, dropout=0.2):
+            super().__init__()
+            self.fc1  = nn.Linear(in_dim, hidden)
+            self.proj = nn.Linear(in_dim, hidden)
+            self.fc2  = nn.Linear(hidden, hidden)
+            self.out  = nn.Linear(hidden, out_dim)
             self.relu = nn.ReLU()
             self.drop = nn.Dropout(dropout)
 
@@ -149,26 +319,33 @@ async def lifespan(app: FastAPI):
             h = self.drop(h)
             return self.out(h)
 
-    device = torch.device("cpu")
-    _model = RecoveredBaselineModel().to(device)
-    ckpt   = torch.load(os.path.join(BASE_DIR, "baseline_res.pth"), map_location=device)
-    sd     = ckpt["model"] if isinstance(ckpt, dict) and "model" in ckpt else ckpt
-    _model.load_state_dict(sd)
+    device  = torch.device("cpu")
+    ckpt    = torch.load(os.path.join(BASE_DIR, "baseline_res.pth"), map_location=device)
+    sd      = ckpt["model"] if isinstance(ckpt, dict) and "model" in ckpt else ckpt
+    keys    = set(sd.keys())
+
+    if any(k.startswith("fc_in") for k in keys):
+        _model = ResidualMLP().to(device)
+        print("Classifier architecture: ResidualMLP (notebook)")
+    elif any(k.startswith("fc1") for k in keys):
+        _model = RecoveredBaselineModel().to(device)
+        print("Classifier architecture: RecoveredBaselineModel (server)")
+    else:
+        raise RuntimeError(f"Unrecognised checkpoint architecture. First keys: {sorted(keys)[:8]}")
+
+    _model.load_state_dict(sd, strict=True)
     _model.eval()
     model = _model
     print("Classifier loaded OK")
 
-    # Step 7: ESM-2
-    # THIS was the actual source of the curl error — esm.pretrained.esm2_t6_8M_UR50D()
-    # internally runs curl/wget to download weights from huggingface.co at import time.
-    # Being inside lifespan means it runs AFTER the container network stack is ready.
+    # Step 8: ESM-2
     import esm as esm_lib
     _esm_model, alphabet = esm_lib.pretrained.esm2_t6_8M_UR50D()
     esm_model       = _esm_model.to(device).eval()
     batch_converter = alphabet.get_batch_converter()
     print("ESM-2 loaded OK")
 
-    yield  # app is live
+    yield
 
     print("Shutting down.")
 
@@ -207,14 +384,23 @@ def parse_sequences(text):
 
 @app.post("/predict")
 async def predict(request: ProteinRequest):
-    entries = parse_sequences(request.sequence)
-    results = []
-    device  = torch.device("cpu")
+    entries    = parse_sequences(request.sequence)
+    results    = []
+    device     = torch.device("cpu")
+    mf_idx     = app.state.mf_indices
 
     for name, sequence in entries:
+
+        # Biological complexity guard — reject before touching ESM-2
+        err = validate_sequence(name, sequence)
+        if err:
+            results.append({"name": name, "error": err})
+            continue
+
         if len(sequence) > 2500:
             results.append({"name": name, "error": "Sequence too long (max 2500 aa)"})
             continue
+
         try:
             _, _, tokens = batch_converter([("p", sequence)])
             with torch.no_grad():
@@ -224,23 +410,31 @@ async def predict(request: ProteinRequest):
             if prob.dim() == 0:
                 prob = prob.unsqueeze(0)
 
-            preds  = []
-            active = mf_indices if mf_indices else range(len(mlb.classes_))
-            for i in active:
+            # Collect all predictions above per-label threshold (no hard cap)
+            raw_preds = []
+            for i in mf_idx:
                 pv = float(prob[i])
                 if pv >= float(thresholds.get(str(i), 0.5)):
                     go_id = mlb.classes_[i]
-                    preds.append({
+                    raw_preds.append({
                         "go_id": go_id,
                         "name":  go_map.get(go_id, go_id),
-                        "prob":  round(pv, 3),
+                        "prob":  round(pv, 4),
                     })
-            preds = sorted(preds, key=lambda x: x["prob"], reverse=True)[:12]
+            raw_preds.sort(key=lambda x: x["prob"], reverse=True)
+
+            # Apply GO hierarchy filter
+            visible, suppressed = apply_hierarchy_filter(raw_preds, go_parents)
+
+            for p in visible:    p["prob"] = round(p["prob"], 3)
+            for p in suppressed: p["prob"] = round(p["prob"], 3)
+
             results.append({
                 "name":              name,
                 "sequence_length":   len(sequence),
-                "predictions":       preds,
-                "n_above_threshold": len(preds),
+                "predictions":       visible,
+                "suppressed":        suppressed,
+                "n_above_threshold": len(raw_preds),
             })
         except Exception as e:
             results.append({"name": name, "error": str(e)})

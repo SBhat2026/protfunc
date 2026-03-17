@@ -173,6 +173,24 @@
     .show-med-inline { font-size: 0.75rem; color: var(--med-text); background: var(--med-bg); border: 1px solid var(--med-border); border-radius: 6px; padding: 4px 12px; cursor: pointer; }
     .show-med-inline:hover { opacity: 0.8; }
 
+    /* ── Suppressed predictions panel ── */
+    .suppressed-toggle {
+      display: flex; align-items: center; gap: 8px; width: 100%;
+      padding: 10px 16px; border: none; border-top: 1px dashed var(--border-strong);
+      background: transparent; color: var(--text-muted); font-size: 0.78rem;
+      font-weight: 500; cursor: pointer; text-align: left;
+      transition: color 0.15s, background 0.15s; letter-spacing: 0.01em;
+    }
+    .suppressed-toggle:hover { color: var(--text-2); background: var(--surface-2); }
+    .suppressed-toggle .toggle-icon { font-size: 0.65rem; transition: transform 0.2s ease; flex-shrink: 0; }
+    .suppressed-toggle[aria-expanded="true"] .toggle-icon { transform: rotate(90deg); }
+    .suppressed-tooltip { margin-left: auto; font-size: 0.68rem; color: var(--text-muted); font-style: italic; font-weight: 400; }
+    .suppressed-list { display: none; flex-direction: column; gap: 4px; padding: 8px 16px 12px; border-top: 1px dashed var(--border); background: var(--surface-2); }
+    .suppressed-list.open { display: flex; }
+    .pred-row.suppressed { opacity: 0.70; border-style: dashed; }
+    .pred-row.suppressed .pred-name { color: var(--text-muted); }
+    .suppressed-reason { font-size: 0.68rem; color: var(--text-muted); font-style: italic; margin-top: 1px; }
+
     /* ── Error card ── */
     .error-card { background: var(--low-bg); border-color: var(--low-border); }
     .seq-error { font-size: 0.8rem; color: var(--low-text); font-weight: 500; }
@@ -290,7 +308,6 @@
 
     <div id="status" class="status hidden"></div>
 
-    <!-- Results toolbar (hidden until results exist) -->
     <div id="resultsToolbar" class="results-toolbar" style="display:none">
       <div class="toolbar-left">
         <input class="filter-input" id="termFilter" placeholder="Filter by term name…" oninput="applyFilters()" />
@@ -307,7 +324,6 @@
     <div id="results" class="results-area"></div>
     <div id="pagination" class="pagination" style="display:none"></div>
 
-    <!-- History -->
     <div class="history-panel" id="historyPanel">
       <div class="history-header" onclick="toggleHistory()">
         <span class="history-title">Recent Predictions</span>
@@ -317,7 +333,6 @@
       <div id="historyList" style="display:none"></div>
     </div>
 
-    <!-- README -->
     <div class="readme-panel">
       <div class="readme-header" onclick="toggleReadme()">
         <span class="readme-title">About & How to Use</span>
@@ -341,7 +356,7 @@
             <li>Multiple sequences can be submitted at once — separate each with a FASTA header line.</li>
             <li>The model accepts sequences up to 2500 amino acids. Longer sequences will be rejected.</li>
             <li>Click <strong>Predict Functions</strong> or press <strong>⌘ + Enter</strong>.</li>
-            <li>Results are sorted by confidence. High confidence (≥80%) predictions are most reliable.</li>
+            <li>Results are sorted by confidence. High confidence (≥75%) predictions are most reliable.</li>
           </ul>
         </div>
         <hr class="readme-divider"/>
@@ -352,14 +367,14 @@
         <hr class="readme-divider"/>
         <div class="readme-section">
           <h3>Understanding GO Terms</h3>
-          <p>Each prediction shows a GO term ID (e.g. GO:0004672) and its name. Clicking the GO ID opens <a href="https://amigo.geneontology.org" target="_blank" rel="noopener">AmiGO</a>, the Gene Ontology browser, where you can explore the term's definition, its place in the GO hierarchy, and which proteins are annotated with it. For broader context and ontology navigation, <a href="https://www.geneontology.org" target="_blank" rel="noopener">geneontology.org</a> provides the full ontology and annotation data.</p>
+          <p>Each prediction shows a GO term ID (e.g. GO:0004672) and its name. Clicking the GO ID opens <a href="https://amigo.geneontology.org" target="_blank" rel="noopener">AmiGO</a>, the Gene Ontology browser, where you can explore the term's definition, its place in the GO hierarchy, and which proteins are annotated with it.</p>
         </div>
         <hr class="readme-divider"/>
         <div class="readme-section">
           <h3>Confidence Levels</h3>
           <ul>
-            <li><strong>High (≥80%)</strong> — strong prediction, consistent with the training distribution.</li>
-            <li><strong>Medium (55–80%)</strong> — moderate confidence, hidden by default to reduce noise. Toggle with the toolbar button.</li>
+            <li><strong>High (≥75%)</strong> — strong prediction, consistent with the training distribution.</li>
+            <li><strong>Medium (55–75%)</strong> — moderate confidence, hidden by default to reduce noise. Toggle with the toolbar button.</li>
             <li><strong>Low (&lt;55%)</strong> — uncertain, hidden by default. Use cautiously as supplementary signal only.</li>
           </ul>
         </div>
@@ -380,7 +395,7 @@
       </div>
     </div>
 
-  </div><!-- end .layout -->
+  </div>
 
   <script>
     const ta = document.getElementById('sequenceInput');
@@ -396,16 +411,17 @@
     if (savedTheme) applyTheme(savedTheme === 'dark');
     else applyTheme(window.matchMedia('(prefers-color-scheme: dark)').matches);
 
-    // ── Char counter ──────────────────────────────────────────────────────────
+    // ── Char counter — strips full FASTA header lines before counting ─────────
     ta.addEventListener('input', () => {
-      const seq = ta.value.replace(/>/g,'').replace(/[^A-Za-z]/g,'');
+      const seq = ta.value.split('\n').filter(l => !l.trimStart().startsWith('>')).join('').replace(/[^A-Za-z]/g, '');
       cc.textContent = seq.length ? `${seq.length.toLocaleString()} aa` : '0 aa';
     });
     ta.addEventListener('keydown', e => { if (e.key === 'Enter' && e.metaKey) predict(); });
 
     // ── Helpers ───────────────────────────────────────────────────────────────
+    // confClass and confLabel use matching thresholds (0.75 / 0.55)
     function confClass(p) { return p >= 0.75 ? 'conf-high' : p >= 0.55 ? 'conf-med' : 'conf-low'; }
-    function confLabel(p) { return p >= 0.80 ? 'High' : p >= 0.60 ? 'Medium' : 'Low'; }
+    function confLabel(p) { return p >= 0.75 ? 'High'      : p >= 0.55 ? 'Medium'   : 'Low'; }
     function probBar(p) {
       return `<div class="prob-bar-wrap"><div class="prob-bar-fill ${confClass(p)}" style="width:${Math.round(p*100)}%"></div></div>`;
     }
@@ -413,20 +429,109 @@
       return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
     }
 
+    // ── Validation ────────────────────────────────────────────────────────────
+    const MIN_SEQ_LENGTH    = 30;
+    const MIN_ENTROPY_BITS  = 2.5;
+    const MAX_DOMINANT_FRAC = 0.60;
+    const MIN_DISTINCT_AA   = 5;
+    const INVALID_AA_RE     = /[BJOUXZ]/gi;
+
+    function sequenceEntropy(seq) {
+      const upper  = seq.toUpperCase();
+      const counts = {};
+      for (const aa of upper) counts[aa] = (counts[aa] || 0) + 1;
+      const n = upper.length;
+      return -Object.values(counts).reduce((h, c) => h + (c / n) * Math.log2(c / n), 0);
+    }
+
+    function parseSequences(raw) {
+      const lines = raw.split('\n');
+      const seqs  = [];
+      let current = null;
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (trimmed.startsWith('>')) {
+          if (current) seqs.push(current);
+          current = { name: trimmed.slice(1).trim() || `Sequence ${seqs.length + 1}`, residues: '' };
+        } else if (trimmed) {
+          if (!current) current = { name: `Sequence ${seqs.length + 1}`, residues: '' };
+          current.residues += trimmed.replace(/\s+/g, '');
+        }
+      }
+      if (current) seqs.push(current);
+      return seqs;
+    }
+
+    function validateSequences(seqs) {
+      const errors = [];
+      for (const seq of seqs) {
+        const label = `"${escHtml(seq.name)}"`;
+        const res   = seq.residues;
+
+        if (res.length === 0) { errors.push(`${label}: sequence is empty.`); continue; }
+
+        if (res.length < MIN_SEQ_LENGTH) {
+          errors.push(`${label}: too short (${res.length} aa — minimum ${MIN_SEQ_LENGTH} aa). Sequences this short are unlikely to fold into a stable domain.`);
+          continue;
+        }
+
+        const badChars = [...new Set((res.match(INVALID_AA_RE) || []).map(c => c.toUpperCase()))];
+        if (badChars.length > 0) {
+          errors.push(`${label}: contains invalid amino acid character(s): ${badChars.join(', ')}. Ambiguity codes are not accepted.`);
+        }
+
+        const upper  = res.toUpperCase();
+        const counts = {};
+        for (const aa of upper) counts[aa] = (counts[aa] || 0) + 1;
+
+        if (Object.keys(counts).length < MIN_DISTINCT_AA) {
+          errors.push(`${label}: only ${Object.keys(counts).length} distinct residue type(s). Real proteins require at least ${MIN_DISTINCT_AA}.`);
+          continue;
+        }
+
+        const maxCount = Math.max(...Object.values(counts));
+        const domFrac  = maxCount / res.length;
+        if (domFrac > MAX_DOMINANT_FRAC) {
+          const domAA = Object.keys(counts).find(k => counts[k] === maxCount);
+          errors.push(`${label}: dominated by a single residue (${domAA} = ${Math.round(domFrac * 100)}%). Low-complexity sequences produce unreliable embeddings.`);
+          continue;
+        }
+
+        const H = sequenceEntropy(res);
+        if (H < MIN_ENTROPY_BITS) {
+          errors.push(`${label}: very low sequence complexity (Shannon entropy ${H.toFixed(2)} bits — minimum ${MIN_ENTROPY_BITS} bits). Repetitive or artificially constructed sequences are not accepted.`);
+        }
+      }
+      return errors;
+    }
+
     // ── State ─────────────────────────────────────────────────────────────────
-    let allResults   = [];    // full results from last predict
-    let showMed      = true;  // medium confidence visible
-    let showLow      = false; // low confidence hidden by default
-    let currentPage  = 1;
-    const PAGE_SIZE  = 10;
+    let allResults  = [];
+    let showMed     = true;
+    let showLow     = false;
+    let currentPage = 1;
+    const PAGE_SIZE = 10;
 
     // ── Predict ───────────────────────────────────────────────────────────────
     async function predict() {
-      const seq = ta.value.trim();
-      if (!seq) { shake(); return; }
+      const raw = ta.value.trim();
+      if (!raw) { shake(); return; }
 
       const btn    = document.getElementById('predictBtn');
       const status = document.getElementById('status');
+
+      // Client-side validation
+      const seqs = parseSequences(raw);
+      if (seqs.length === 0) { shake(); return; }
+
+      const validationErrors = validateSequences(seqs);
+      if (validationErrors.length > 0) {
+        status.className  = 'status visible';
+        status.innerHTML  = `<span class="err-msg">⚠ ${validationErrors.join('<br>⚠ ')}</span>`;
+        document.getElementById('results').innerHTML = '';
+        shake();
+        return;
+      }
 
       btn.disabled = true;
       btn.querySelector('.btn-label').textContent = 'Running…';
@@ -440,7 +545,7 @@
         const res  = await fetch('/predict', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ sequence: seq }),
+          body: JSON.stringify({ sequence: raw }),
         });
         if (!res.ok) throw new Error(`Server error ${res.status}`);
         const data = await res.json();
@@ -450,7 +555,7 @@
         renderPage();
         if (allResults.length > 0) {
           document.getElementById('resultsToolbar').style.display = 'flex';
-          addToHistory(allResults, seq);
+          addToHistory(allResults, raw);
         }
       } catch(e) {
         status.className = 'status visible';
@@ -470,8 +575,8 @@
     }
 
     function renderPagination() {
-      const total    = Math.ceil(allResults.length / PAGE_SIZE);
-      const pag      = document.getElementById('pagination');
+      const total = Math.ceil(allResults.length / PAGE_SIZE);
+      const pag   = document.getElementById('pagination');
       if (total <= 1) { pag.style.display = 'none'; return; }
       pag.style.display = 'flex';
       let html = `<button class="page-btn" onclick="goPage(${currentPage-1})" ${currentPage===1?'disabled':''}>‹ Prev</button>`;
@@ -492,6 +597,23 @@
     }
 
     // ── Render results ────────────────────────────────────────────────────────
+    function predRowHTML(p, extraClass) {
+      extraClass = extraClass || '';
+      const cc2 = confClass(p.prob);
+      return `<div class="pred-row ${cc2} ${extraClass}" data-name="${escHtml((p.name||'').toLowerCase())}" data-goid="${escHtml(p.go_id||'')}">
+        <div class="pred-main">
+          <span class="pred-name">${escHtml(p.name)}</span>
+          <span class="pred-goid"><a href="https://amigo.geneontology.org/amigo/term/${p.go_id}" target="_blank" rel="noopener">${escHtml(p.go_id)}</a></span>
+          ${extraClass === 'suppressed' ? '<span class="suppressed-reason">Parent term not predicted above threshold</span>' : ''}
+        </div>
+        <div class="pred-right">
+          <span class="pred-conf-label">${confLabel(p.prob)}</span>
+          <span class="pred-prob">${(p.prob*100).toFixed(1)}%</span>
+          ${probBar(p.prob)}
+        </div>
+      </div>`;
+    }
+
     function renderResults(results, offset) {
       const container = document.getElementById('results');
       if (!results || results.length === 0) {
@@ -510,30 +632,22 @@
             </div>
           </div>`;
         }
-        const preds   = r.predictions || [];
-        const seqName = r.name || `Sequence ${globalIdx+1}`;
-        const highCount = preds.filter(p => p.prob >= 0.75).length;
-        const medCount  = preds.filter(p => p.prob >= 0.55 && p.prob < 0.75).length;
-        const lowCount  = preds.filter(p => p.prob < 0.55).length;
+
+        const preds      = r.predictions  || [];
+        const suppressed = r.suppressed   || [];
+        const seqName    = r.name || `Sequence ${globalIdx+1}`;
+        const highCount  = preds.filter(p => p.prob >= 0.75).length;
+        const medCount   = preds.filter(p => p.prob >= 0.55 && p.prob < 0.75).length;
+        const lowCount   = preds.filter(p => p.prob < 0.55).length;
 
         const predHTML = preds.length === 0
           ? '<p class="no-preds">No functions predicted above confidence threshold.</p>'
           : preds.map(p => {
-              const cc2   = confClass(p.prob);
-              const isMed = cc2 === 'conf-med';
-              const isLow = cc2 === 'conf-low';
-              const hiddenClass = (isMed && !showMed) ? ' hidden-med' : (isLow && !showLow) ? ' hidden-low' : '';
-              return `<div class="pred-row ${cc2}${hiddenClass}" data-name="${escHtml(p.name.toLowerCase())}" data-goid="${escHtml(p.go_id)}">
-                <div class="pred-main">
-                  <span class="pred-name">${escHtml(p.name)}</span>
-                  <span class="pred-goid"><a href="https://amigo.geneontology.org/amigo/term/${p.go_id}" target="_blank" rel="noopener">${escHtml(p.go_id)}</a></span>
-                </div>
-                <div class="pred-right">
-                  <span class="pred-conf-label">${confLabel(p.prob)}</span>
-                  <span class="pred-prob">${(p.prob*100).toFixed(1)}%</span>
-                  ${probBar(p.prob)}
-                </div>
-              </div>`;
+              const cc2      = confClass(p.prob);
+              const isMed    = cc2 === 'conf-med';
+              const isLow    = cc2 === 'conf-low';
+              const hiddenCl = (isMed && !showMed) ? ' hidden-med' : (isLow && !showLow) ? ' hidden-low' : '';
+              return predRowHTML(p, hiddenCl.trim());
             }).join('');
 
         const medCollapseRow = medCount > 0
@@ -541,6 +655,16 @@
                <button class="show-med-inline" onclick="toggleMed()">Show ${medCount} medium confidence result${medCount>1?'s':''}</button>
              </div>`
           : '';
+
+        const suppressedHTML = suppressed.length === 0 ? '' : `
+          <button class="suppressed-toggle" aria-expanded="false" onclick="toggleSuppressed(this)">
+            <span class="toggle-icon">▶</span>
+            ${suppressed.length} potential function${suppressed.length > 1 ? 's' : ''} hidden
+            <span class="suppressed-tooltip">parent term not predicted — click to inspect</span>
+          </button>
+          <div class="suppressed-list">
+            ${suppressed.map(p => predRowHTML(p, 'suppressed')).join('')}
+          </div>`;
 
         return `
           <div class="result-card" style="animation-delay:${idx*60}ms" data-idx="${globalIdx}">
@@ -553,28 +677,36 @@
                 <span class="stat-chip">${highCount} high</span>
                 ${medCount ? `<span class="stat-chip" style="color:var(--med-text);background:var(--med-bg)">${medCount} med</span>` : ''}
                 ${lowCount ? `<span class="stat-chip muted">${lowCount} low</span>` : ''}
+                ${suppressed.length ? `<span class="stat-chip muted">${suppressed.length} suppressed</span>` : ''}
               </div>
             </div>
             <div class="pred-list">${predHTML}${medCollapseRow}</div>
+            ${suppressedHTML}
           </div>`;
       }).join('');
 
       applyFilters();
     }
 
+    function toggleSuppressed(btn) {
+      const expanded = btn.getAttribute('aria-expanded') === 'true';
+      btn.setAttribute('aria-expanded', String(!expanded));
+      btn.nextElementSibling.classList.toggle('open', !expanded);
+    }
+
     // ── Filters ───────────────────────────────────────────────────────────────
     function applyFilters() {
       const query = (document.getElementById('termFilter').value || '').toLowerCase().trim();
       document.querySelectorAll('.pred-row').forEach(row => {
-        const name  = row.dataset.name  || '';
-        const goid  = row.dataset.goid  || '';
+        const name  = row.dataset.name || '';
+        const goid  = row.dataset.goid || '';
         const isMed = row.classList.contains('conf-med');
         const isLow = row.classList.contains('conf-low');
-        const hiddenByConf = (isMed && !showMed) || (isLow && !showLow);
+        const hiddenByConf   = (isMed && !showMed) || (isLow && !showLow);
         const hiddenByFilter = query && !name.includes(query) && !goid.includes(query);
-        row.classList.toggle('hidden-med', isMed && !showMed);
-        row.classList.toggle('hidden-low', isLow && !showLow);
-        row.classList.toggle('filtered-out', !hiddenByConf && hiddenByFilter);
+        row.classList.toggle('hidden-med',    isMed && !showMed);
+        row.classList.toggle('hidden-low',    isLow && !showLow);
+        row.classList.toggle('filtered-out',  !hiddenByConf && hiddenByFilter);
       });
     }
 
@@ -611,7 +743,6 @@
         if (r.error) continue;
         const goList = (r.predictions || []).map(p => `${p.go_id}|${p.name}|${(p.prob*100).toFixed(1)}%`).join('; ');
         lines.push(`>${r.name} [${r.sequence_length} aa] GO:MF=${goList}`);
-        // sequence not returned by server — note this in the file
         lines.push('; sequence not included (submit FASTA input to preserve sequence)');
       }
       triggerDownload(lines.join('\n'), 'protfunc_results.fasta', 'text/plain');
@@ -634,9 +765,7 @@
       catch { return []; }
     }
 
-    function saveHistory(h) {
-      localStorage.setItem(HISTORY_KEY, JSON.stringify(h.slice(0, HISTORY_MAX)));
-    }
+    function saveHistory(h) { localStorage.setItem(HISTORY_KEY, JSON.stringify(h.slice(0, HISTORY_MAX))); }
 
     function addToHistory(results, inputSeq) {
       const h    = loadHistory();
@@ -648,9 +777,9 @@
     }
 
     function renderHistory() {
-      const h     = loadHistory();
-      const meta  = document.getElementById('historyMeta');
-      const list  = document.getElementById('historyList');
+      const h    = loadHistory();
+      const meta = document.getElementById('historyMeta');
+      const list = document.getElementById('historyList');
       meta.textContent = `${h.length} / ${HISTORY_MAX}`;
       if (h.length === 0) {
         list.innerHTML = '<div class="history-empty">No predictions yet.</div>';
@@ -658,7 +787,7 @@
       }
       list.innerHTML = `<div class="history-list">` +
         h.map((entry, i) => {
-          const date = new Date(entry.ts).toLocaleString(undefined, { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
+          const date  = new Date(entry.ts).toLocaleString(undefined, { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
           const label = entry.n > 1 ? `${entry.name} +${entry.n-1} more` : entry.name;
           return `<div class="history-item" onclick="restoreHistory(${i})">
             <span class="history-item-name">${escHtml(label)}</span>
@@ -674,18 +803,18 @@
       allResults  = h[i].results;
       currentPage = 1;
       ta.value    = h[i].inputSeq || '';
-      const seq   = ta.value.replace(/>/g,'').replace(/[^A-Za-z]/g,'');
+      const seq   = ta.value.split('\n').filter(l => !l.trimStart().startsWith('>')).join('').replace(/[^A-Za-z]/g, '');
       cc.textContent = seq.length ? `${seq.length.toLocaleString()} aa` : '0 aa';
       document.getElementById('resultsToolbar').style.display = 'flex';
       renderPage();
     }
 
     function toggleHistory() {
-      const list    = document.getElementById('historyList');
-      const toggle  = document.getElementById('historyToggle');
-      const visible = list.style.display !== 'none';
-      list.style.display  = visible ? 'none' : 'block';
-      toggle.textContent  = visible ? '▾ Show' : '▴ Hide';
+      const list   = document.getElementById('historyList');
+      const toggle = document.getElementById('historyToggle');
+      const vis    = list.style.display !== 'none';
+      list.style.display = vis ? 'none' : 'block';
+      toggle.textContent = vis ? '▾ Show' : '▴ Hide';
     }
 
     // ── README ────────────────────────────────────────────────────────────────
@@ -708,7 +837,7 @@ MASLHPPSFAYMRDGRNLSLAESVPAEIMHMVDPYWYQWPPLEPMWFGIIGFVIAILGTMSLAGNFIVMYIFTSSKGLRT
       const seq = DEMOS[key];
       if (!seq) return;
       ta.value = seq;
-      const aa = seq.replace(/>/g,'').replace(/[^A-Za-z]/g,'');
+      const aa = seq.split('\n').filter(l => !l.trimStart().startsWith('>')).join('').replace(/[^A-Za-z]/g, '');
       cc.textContent = aa.length ? `${aa.length.toLocaleString()} aa` : '0 aa';
       ta.focus();
     }
