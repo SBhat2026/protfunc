@@ -29,19 +29,11 @@
       --shadow-card-hover: 0 2px 6px rgba(0,0,0,0.08), 0 16px 40px rgba(0,0,0,0.08);
       --blob1: #b3d9ff; --blob2: #c9f0e4; --blob3: #ddd6ff;
     }
-
     html.dark {
-      --bg:            #0d0d0f;
-      --surface:       #1c1c1e;
-      --surface-2:     #2c2c2e;
-      --border:        rgba(255,255,255,0.08);
-      --border-strong: rgba(255,255,255,0.14);
-      --text-primary:  #f5f5f7;
-      --text-2:        #d1d1d6;
-      --text-muted:    #636366;
-      --accent:        #2997ff;
-      --accent-hover:  #47a8ff;
-      --accent-dim:    rgba(41,151,255,0.15);
+      --bg: #0d0d0f; --surface: #1c1c1e; --surface-2: #2c2c2e;
+      --border: rgba(255,255,255,0.08); --border-strong: rgba(255,255,255,0.14);
+      --text-primary: #f5f5f7; --text-2: #d1d1d6; --text-muted: #636366;
+      --accent: #2997ff; --accent-hover: #47a8ff; --accent-dim: rgba(41,151,255,0.15);
       --high-bg: #0d2e22; --high-border: #1a5c40; --high-text: #6ee7b7; --high-bar: #34c98a;
       --med-bg:  #2a1f00; --med-border:  #5c3d00; --med-text:  #fcd34d; --med-bar:  #f5a623;
       --low-bg:  #2a0d0d; --low-border:  #5c1a1a; --low-text:  #fca5a5; --low-bar:  #ff5f5f;
@@ -61,43 +53,44 @@
     @keyframes drift1 { from { transform: translate(0,0) scale(1); } to { transform: translate(30px,20px) scale(1.06); } }
     @keyframes drift2 { from { transform: translate(0,0) scale(1); } to { transform: translate(-20px,30px) scale(1.04); } }
 
-    .layout { position: relative; z-index: 1; max-width: 780px; margin: 0 auto; padding: 48px 24px 80px; display: flex; flex-direction: column; gap: 28px; }
+    .layout { position: relative; z-index: 1; max-width: 820px; margin: 0 auto; padding: 48px 24px 80px; display: flex; flex-direction: column; gap: 28px; }
 
+    /* ── Header ── */
     .header { display: flex; align-items: center; justify-content: space-between; }
     .logo { display: flex; align-items: center; gap: 10px; color: var(--text-primary); text-decoration: none; }
     .logo-icon { width: 28px; height: 28px; color: var(--accent); flex-shrink: 0; }
     .logo-text { font-size: 1.05rem; font-weight: 600; letter-spacing: -0.02em; }
     .header-right { display: flex; align-items: center; gap: 8px; }
     .badge { font-size: 0.72rem; font-weight: 500; letter-spacing: 0.02em; color: var(--text-muted); background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 3px 10px; }
+    .icon-btn { width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--border); background: var(--surface); color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.15s, border-color 0.15s, transform 0.15s; flex-shrink: 0; }
+    .icon-btn:hover { background: var(--surface-2); border-color: var(--border-strong); transform: scale(1.08); }
+    .icon-btn svg { width: 16px; height: 16px; }
+    .icon-sun { display: none; } .icon-moon { display: block; }
+    html.dark .icon-sun { display: block; } html.dark .icon-moon { display: none; }
 
-    /* Dark mode toggle */
-    .theme-btn { width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--border); background: var(--surface); color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.15s, border-color 0.15s, transform 0.15s; flex-shrink: 0; }
-    .theme-btn:hover { background: var(--surface-2); border-color: var(--border-strong); transform: scale(1.08); }
-    .theme-btn svg { width: 16px; height: 16px; }
-    .icon-sun { display: none; }
-    .icon-moon { display: block; }
-    html.dark .icon-sun  { display: block; }
-    html.dark .icon-moon { display: none; }
-
+    /* ── Hero ── */
     .hero { padding: 8px 0 4px; }
-    .hero-title { font-size: clamp(2rem, 5vw, 2.8rem); font-weight: 600; letter-spacing: -0.04em; line-height: 1.12; color: var(--text-primary); margin-bottom: 14px; }
-    .hero-sub { font-size: 0.95rem; line-height: 1.65; color: var(--text-muted); max-width: 520px; font-weight: 400; }
+    .hero-title { font-size: clamp(2rem, 5vw, 2.8rem); font-weight: 600; letter-spacing: -0.04em; line-height: 1.12; margin-bottom: 14px; }
+    .hero-sub { font-size: 0.95rem; line-height: 1.65; color: var(--text-muted); max-width: 520px; }
 
+    /* ── Cards ── */
     .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-card); transition: box-shadow 0.2s, background 0.25s, border-color 0.25s; }
     .input-card { padding: 20px 20px 16px; display: flex; flex-direction: column; gap: 12px; }
     .card-label { display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; font-weight: 500; color: var(--text-muted); letter-spacing: 0.04em; text-transform: uppercase; }
     .char-count { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--text-muted); }
 
+    /* ── Textarea ── */
     .seq-textarea { width: 100%; min-height: 160px; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface-2); padding: 14px 16px; font-family: 'JetBrains Mono', monospace; font-size: 0.82rem; line-height: 1.7; color: var(--text-primary); resize: vertical; outline: none; transition: border-color 0.15s, background 0.15s; }
     .seq-textarea::placeholder { color: var(--text-muted); }
     .seq-textarea:focus { border-color: var(--accent); background: var(--surface); box-shadow: 0 0 0 3px var(--accent-dim); }
 
+    /* ── Input footer ── */
     .input-footer { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
     .input-hints { display: flex; gap: 6px; }
     .hint-tag { font-size: 0.7rem; font-weight: 500; color: var(--text-muted); background: var(--surface-2); border: 1px solid var(--border); border-radius: 6px; padding: 3px 8px; }
 
-    .btn-predict { display: flex; align-items: center; gap: 8px; background: var(--accent); color: #fff; border: none; border-radius: var(--radius-sm); padding: 10px 20px; font-size: 0.875rem; font-weight: 500; cursor: pointer; transition: background 0.15s, transform 0.1s, opacity 0.15s; letter-spacing: -0.01em; white-space: nowrap; }
-    .btn-predict:hover  { background: var(--accent-hover); transform: translateY(-1px); }
+    .btn-predict { display: flex; align-items: center; gap: 8px; background: var(--accent); color: #fff; border: none; border-radius: var(--radius-sm); padding: 10px 20px; font-size: 0.875rem; font-weight: 500; cursor: pointer; transition: background 0.15s, transform 0.1s, opacity 0.15s; white-space: nowrap; }
+    .btn-predict:hover { background: var(--accent-hover); transform: translateY(-1px); }
     .btn-predict:active { transform: translateY(0); }
     .btn-predict:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
     .btn-icon { font-size: 1rem; transition: transform 0.2s; }
@@ -106,130 +99,120 @@
     @keyframes shake { 0%,100% { transform: translateX(0); } 20%,60% { transform: translateX(-5px); } 40%,80% { transform: translateX(5px); } }
     .shake { animation: shake 0.35s ease; }
 
+    /* ── Status ── */
     .status { display: flex; align-items: center; gap: 10px; padding: 12px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); font-size: 0.875rem; color: var(--text-2); }
-    .status.hidden  { display: none; }
-    .status.visible { display: flex; }
+    .status.hidden { display: none; } .status.visible { display: flex; }
     .err-msg { color: #ff5f5f; font-weight: 500; }
-
     .spinner { width: 16px; height: 16px; flex-shrink: 0; border: 2px solid var(--border-strong); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    .results-area { display: flex; flex-direction: column; gap: 18px; }
+    /* ── Demo bar ── */
+    .demo-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .demo-label { font-size: 0.72rem; font-weight: 500; color: var(--text-muted); letter-spacing: 0.04em; text-transform: uppercase; flex-shrink: 0; }
+    .demo-btn { font-size: 0.72rem; font-weight: 500; color: var(--accent); background: var(--accent-dim); border: 1px solid transparent; border-radius: 6px; padding: 3px 10px; cursor: pointer; transition: background 0.15s; }
+    .demo-btn:hover { background: var(--accent); color: #fff; }
 
-    .result-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-card); overflow: hidden; animation: fadeUp 0.3s ease both; transition: box-shadow 0.2s, background 0.25s; }
+    /* ── Results toolbar ── */
+    .results-toolbar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; padding: 10px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); }
+    .toolbar-left { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .toolbar-right { display: flex; align-items: center; gap: 8px; }
+    .filter-input { font-size: 0.8rem; padding: 5px 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface-2); color: var(--text-primary); outline: none; width: 180px; transition: border-color 0.15s; }
+    .filter-input:focus { border-color: var(--accent); }
+    .filter-input::placeholder { color: var(--text-muted); }
+    .toggle-med-btn { font-size: 0.72rem; font-weight: 500; color: var(--med-text); background: var(--med-bg); border: 1px solid var(--med-border); border-radius: 6px; padding: 4px 10px; cursor: pointer; transition: opacity 0.15s; }
+    .toggle-med-btn:hover { opacity: 0.8; }
+    .toggle-low-btn { font-size: 0.72rem; font-weight: 500; color: var(--low-text); background: var(--low-bg); border: 1px solid var(--low-border); border-radius: 6px; padding: 4px 10px; cursor: pointer; transition: opacity 0.15s; }
+    .toggle-low-btn:hover { opacity: 0.8; }
+    .dl-btn { font-size: 0.72rem; font-weight: 500; color: var(--accent); background: var(--accent-dim); border: 1px solid transparent; border-radius: 6px; padding: 4px 10px; cursor: pointer; transition: background 0.15s; }
+    .dl-btn:hover { background: var(--accent); color: #fff; }
+    .dl-sep { font-size: 0.72rem; color: var(--text-muted); }
+
+    /* ── Result cards ── */
+    .results-area { display: flex; flex-direction: column; gap: 18px; }
+    .result-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-card); overflow: hidden; animation: fadeUp 0.3s ease both; transition: box-shadow 0.2s; }
     .result-card:hover { box-shadow: var(--shadow-card-hover); }
     @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
 
-    .result-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; padding: 16px 20px; border-bottom: 1px solid var(--border); background: var(--surface-2); transition: background 0.25s; }
+    .result-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; padding: 14px 20px; border-bottom: 1px solid var(--border); background: var(--surface-2); }
     .result-header-left { display: flex; align-items: center; gap: 10px; }
     .seq-name { font-size: 0.9rem; font-weight: 600; color: var(--text-primary); letter-spacing: -0.01em; font-family: 'JetBrains Mono', monospace; }
     .seq-len-pill { font-size: 0.72rem; font-weight: 500; color: var(--text-muted); background: var(--border); border-radius: 20px; padding: 2px 9px; }
-    .result-stats { display: flex; gap: 6px; }
+    .result-stats { display: flex; gap: 6px; align-items: center; }
     .stat-chip { font-size: 0.72rem; font-weight: 500; color: var(--accent); background: var(--accent-dim); border-radius: 6px; padding: 2px 8px; }
     .stat-chip.muted { color: var(--text-muted); background: transparent; border: 1px solid var(--border); }
 
+    /* ── Predictions ── */
     .pred-list { padding: 12px 16px; display: flex; flex-direction: column; gap: 6px; }
     .no-preds { text-align: center; color: var(--text-muted); font-size: 0.875rem; padding: 24px 0 18px; }
-
     .pred-row { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 12px; padding: 10px 14px; border-radius: var(--radius-sm); border: 1px solid transparent; transition: transform 0.15s, box-shadow 0.15s; cursor: default; }
     .pred-row:hover { transform: translateX(2px); box-shadow: 0 2px 8px rgba(0,0,0,0.12); }
     .pred-row.conf-high { background: var(--high-bg); border-color: var(--high-border); }
     .pred-row.conf-med  { background: var(--med-bg);  border-color: var(--med-border); }
     .pred-row.conf-low  { background: var(--low-bg);  border-color: var(--low-border); }
+    .pred-row.hidden-med { display: none; }
+    .pred-row.hidden-low { display: none; }
+    .pred-row.filtered-out { display: none; }
 
     .pred-main { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
     .pred-name { font-size: 0.875rem; font-weight: 500; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .pred-goid { font-size: 0.72rem; font-family: 'JetBrains Mono', monospace; color: var(--text-muted); }
-
+    .pred-goid a { color: var(--text-muted); text-decoration: none; transition: color 0.15s; }
+    .pred-goid a:hover { color: var(--accent); text-decoration: underline; }
     .pred-right { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; min-width: 80px; }
     .pred-conf-label { font-size: 0.68rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; }
-    .conf-high .pred-conf-label { color: var(--high-text); }
-    .conf-med  .pred-conf-label { color: var(--med-text); }
-    .conf-low  .pred-conf-label { color: var(--low-text); }
+    .conf-high .pred-conf-label { color: var(--high-text); } .conf-med .pred-conf-label { color: var(--med-text); } .conf-low .pred-conf-label { color: var(--low-text); }
     .pred-prob { font-size: 0.875rem; font-weight: 600; font-family: 'JetBrains Mono', monospace; }
-    .conf-high .pred-prob { color: var(--high-text); }
-    .conf-med  .pred-prob { color: var(--med-text); }
-    .conf-low  .pred-prob { color: var(--low-text); }
-
+    .conf-high .pred-prob { color: var(--high-text); } .conf-med .pred-prob { color: var(--med-text); } .conf-low .pred-prob { color: var(--low-text); }
     .prob-bar-wrap { width: 72px; height: 4px; background: rgba(128,128,128,0.2); border-radius: 2px; overflow: hidden; }
     .prob-bar-fill { height: 100%; border-radius: 2px; transition: width 0.4s ease; }
-    .prob-bar-fill.conf-high { background: var(--high-bar); }
-    .prob-bar-fill.conf-med  { background: var(--med-bar); }
-    .prob-bar-fill.conf-low  { background: var(--low-bar); }
+    .prob-bar-fill.conf-high { background: var(--high-bar); } .prob-bar-fill.conf-med { background: var(--med-bar); } .prob-bar-fill.conf-low { background: var(--low-bar); }
 
+    /* ── Collapsed med section ── */
+    .med-collapsed-row { display: none; align-items: center; justify-content: center; padding: 8px; }
+    .med-collapsed-row.show { display: flex; }
+    .show-med-inline { font-size: 0.75rem; color: var(--med-text); background: var(--med-bg); border: 1px solid var(--med-border); border-radius: 6px; padding: 4px 12px; cursor: pointer; }
+    .show-med-inline:hover { opacity: 0.8; }
+
+    /* ── Error card ── */
     .error-card { background: var(--low-bg); border-color: var(--low-border); }
     .seq-error { font-size: 0.8rem; color: var(--low-text); font-weight: 500; }
     .empty-state { text-align: center; color: var(--text-muted); font-size: 0.9rem; padding: 32px; }
 
-    /* Demo sequences */
-    .demo-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-    .demo-label { font-size: 0.72rem; font-weight: 500; color: var(--text-muted); letter-spacing: 0.04em; text-transform: uppercase; flex-shrink: 0; }
-    .demo-btn { font-size: 0.72rem; font-weight: 500; color: var(--accent); background: var(--accent-dim); border: 1px solid transparent; border-radius: 6px; padding: 3px 10px; cursor: pointer; transition: background 0.15s, border-color 0.15s; }
-    .demo-btn:hover { background: var(--accent); color: #fff; }
+    /* ── Pagination ── */
+    .pagination { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 8px 0; }
+    .page-btn { font-size: 0.8rem; font-weight: 500; padding: 5px 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--text-2); cursor: pointer; transition: background 0.15s, border-color 0.15s; }
+    .page-btn:hover { background: var(--surface-2); border-color: var(--border-strong); }
+    .page-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .page-info { font-size: 0.8rem; color: var(--text-muted); }
 
-    /* GO ID links */
-    .pred-goid a { color: var(--text-muted); text-decoration: none; transition: color 0.15s; }
-    .pred-goid a:hover { color: var(--accent); text-decoration: underline; }
+    /* ── History panel ── */
+    .history-panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-card); overflow: hidden; }
+    .history-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; border-bottom: 1px solid var(--border); background: var(--surface-2); cursor: pointer; user-select: none; }
+    .history-title { font-size: 0.85rem; font-weight: 600; color: var(--text-2); }
+    .history-meta { font-size: 0.75rem; color: var(--text-muted); }
+    .history-toggle { font-size: 0.75rem; color: var(--accent); }
+    .history-list { padding: 8px; display: flex; flex-direction: column; gap: 4px; }
+    .history-item { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; border-radius: var(--radius-sm); cursor: pointer; transition: background 0.12s; }
+    .history-item:hover { background: var(--surface-2); }
+    .history-item-name { font-size: 0.82rem; font-weight: 500; color: var(--text-primary); font-family: 'JetBrains Mono', monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 320px; }
+    .history-item-meta { font-size: 0.72rem; color: var(--text-muted); flex-shrink: 0; margin-left: 8px; }
+    .history-empty { padding: 20px; text-align: center; color: var(--text-muted); font-size: 0.85rem; }
 
-    /* ── Suppressed predictions panel ───────────────────────────────────────── */
-    .suppressed-toggle {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      width: 100%;
-      padding: 10px 16px;
-      border: none;
-      border-top: 1px dashed var(--border-strong);
-      background: transparent;
-      color: var(--text-muted);
-      font-size: 0.78rem;
-      font-weight: 500;
-      cursor: pointer;
-      text-align: left;
-      transition: color 0.15s, background 0.15s;
-      letter-spacing: 0.01em;
-    }
-    .suppressed-toggle:hover {
-      color: var(--text-2);
-      background: var(--surface-2);
-    }
-    .suppressed-toggle .toggle-icon {
-      font-size: 0.65rem;
-      transition: transform 0.2s ease;
-      flex-shrink: 0;
-    }
-    .suppressed-toggle[aria-expanded="true"] .toggle-icon {
-      transform: rotate(90deg);
-    }
-    .suppressed-tooltip {
-      margin-left: auto;
-      font-size: 0.68rem;
-      color: var(--text-muted);
-      font-style: italic;
-      font-weight: 400;
-    }
-    .suppressed-list {
-      display: none;
-      flex-direction: column;
-      gap: 4px;
-      padding: 8px 16px 12px;
-      border-top: 1px dashed var(--border);
-      background: var(--surface-2);
-    }
-    .suppressed-list.open { display: flex; }
-    .pred-row.suppressed {
-      opacity: 0.70;
-      border-style: dashed;
-    }
-    .pred-row.suppressed .pred-name {
-      color: var(--text-muted);
-    }
-    .suppressed-reason {
-      font-size: 0.68rem;
-      color: var(--text-muted);
-      font-style: italic;
-      margin-top: 1px;
-    }
+    /* ── README panel ── */
+    .readme-panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-card); overflow: hidden; }
+    .readme-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; border-bottom: 1px solid var(--border); background: var(--surface-2); cursor: pointer; user-select: none; }
+    .readme-title { font-size: 0.85rem; font-weight: 600; color: var(--text-2); }
+    .readme-toggle { font-size: 0.75rem; color: var(--accent); }
+    .readme-body { padding: 20px 24px; display: none; flex-direction: column; gap: 18px; }
+    .readme-body.open { display: flex; }
+    .readme-section h3 { font-size: 0.875rem; font-weight: 600; color: var(--text-primary); margin-bottom: 8px; }
+    .readme-section p { font-size: 0.85rem; line-height: 1.7; color: var(--text-2); }
+    .readme-section a { color: var(--accent); text-decoration: none; }
+    .readme-section a:hover { text-decoration: underline; }
+    .readme-section ul { padding-left: 18px; display: flex; flex-direction: column; gap: 5px; }
+    .readme-section ul li { font-size: 0.85rem; line-height: 1.6; color: var(--text-2); }
+    .readme-divider { border: none; border-top: 1px solid var(--border); }
 
     @media (max-width: 540px) {
       .layout { padding: 32px 16px 60px; gap: 20px; }
@@ -239,6 +222,7 @@
       .prob-bar-wrap { width: 60px; }
       .input-footer { flex-direction: column; align-items: flex-start; }
       .btn-predict { width: 100%; justify-content: center; }
+      .filter-input { width: 130px; }
     }
   </style>
 </head>
@@ -266,23 +250,9 @@
       <div class="header-right">
         <span class="badge">ESM-2 · GO:MF</span>
         <span class="badge">Beta</span>
-        <button class="theme-btn" id="themeBtn" title="Toggle dark mode" onclick="toggleTheme()">
-          <!-- Moon (shown in light mode) -->
-          <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-          </svg>
-          <!-- Sun (shown in dark mode) -->
-          <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="5"/>
-            <line x1="12" y1="1"  x2="12" y2="3"/>
-            <line x1="12" y1="21" x2="12" y2="23"/>
-            <line x1="4.22" y1="4.22"  x2="5.64" y2="5.64"/>
-            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
-            <line x1="1"  y1="12" x2="3"  y2="12"/>
-            <line x1="21" y1="12" x2="23" y2="12"/>
-            <line x1="4.22"  y1="19.78" x2="5.64"  y2="18.36"/>
-            <line x1="18.36" y1="5.64"  x2="19.78" y2="4.22"/>
-          </svg>
+        <button class="icon-btn" id="themeBtn" title="Toggle dark mode" onclick="toggleTheme()">
+          <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          <svg class="icon-sun"  viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
         </button>
       </div>
     </header>
@@ -319,9 +289,98 @@
     </div>
 
     <div id="status" class="status hidden"></div>
-    <div id="results" class="results-area"></div>
 
-  </div>
+    <!-- Results toolbar (hidden until results exist) -->
+    <div id="resultsToolbar" class="results-toolbar" style="display:none">
+      <div class="toolbar-left">
+        <input class="filter-input" id="termFilter" placeholder="Filter by term name…" oninput="applyFilters()" />
+        <button class="toggle-med-btn" id="toggleMedBtn" onclick="toggleMed()">Hide Medium</button>
+        <button class="toggle-low-btn" id="toggleLowBtn" onclick="toggleLow()">Show Low</button>
+      </div>
+      <div class="toolbar-right">
+        <button class="dl-btn" onclick="downloadTSV()">↓ TSV</button>
+        <span class="dl-sep">·</span>
+        <button class="dl-btn" onclick="downloadFASTA()">↓ FASTA</button>
+      </div>
+    </div>
+
+    <div id="results" class="results-area"></div>
+    <div id="pagination" class="pagination" style="display:none"></div>
+
+    <!-- History -->
+    <div class="history-panel" id="historyPanel">
+      <div class="history-header" onclick="toggleHistory()">
+        <span class="history-title">Recent Predictions</span>
+        <span class="history-meta" id="historyMeta">0 / 30</span>
+        <span class="history-toggle" id="historyToggle">▾ Show</span>
+      </div>
+      <div id="historyList" style="display:none"></div>
+    </div>
+
+    <!-- README -->
+    <div class="readme-panel">
+      <div class="readme-header" onclick="toggleReadme()">
+        <span class="readme-title">About & How to Use</span>
+        <span class="readme-toggle" id="readmeToggle">▾ Show</span>
+      </div>
+      <div class="readme-body" id="readmeBody">
+        <div class="readme-section">
+          <h3>What is ProtFunc?</h3>
+          <p>ProtFunc predicts Gene Ontology Molecular Function (GO:MF) terms for protein sequences. It uses <strong>ESM-2</strong> (Evolutionary Scale Modeling), a protein language model trained on hundreds of millions of sequences, to generate per-residue embeddings that are then passed through a trained classifier to predict which molecular functions a protein is likely to perform.</p>
+        </div>
+        <hr class="readme-divider"/>
+        <div class="readme-section">
+          <h3>What is ESM-2?</h3>
+          <p>ESM-2 is a transformer-based protein language model developed by Meta AI. It learns evolutionary and structural patterns from amino acid sequences without needing structure data, producing rich 320-dimensional embeddings per residue. ProtFunc uses the ESM-2 8M parameter variant (esm2_t6_8M_UR50D) for efficiency. Mean-pooling across residues gives a single protein-level embedding which feeds the classifier.</p>
+        </div>
+        <hr class="readme-divider"/>
+        <div class="readme-section">
+          <h3>How to Use</h3>
+          <ul>
+            <li>Paste one or more sequences in plain amino acid format or FASTA format (starting with <code>&gt;Name</code>).</li>
+            <li>Multiple sequences can be submitted at once — separate each with a FASTA header line.</li>
+            <li>The model accepts sequences up to 2500 amino acids. Longer sequences will be rejected.</li>
+            <li>Click <strong>Predict Functions</strong> or press <strong>⌘ + Enter</strong>.</li>
+            <li>Results are sorted by confidence. High confidence (≥80%) predictions are most reliable.</li>
+          </ul>
+        </div>
+        <hr class="readme-divider"/>
+        <div class="readme-section">
+          <h3>Finding Sequences</h3>
+          <p><a href="https://www.uniprot.org" target="_blank" rel="noopener">UniProt</a> is the best source for protein sequences. Search by protein name or gene name, click an entry, and copy the sequence from the entry page. You can also download in FASTA format directly. For insect proteins specifically, filtering by taxonomy in UniProt gives the most relevant results for this model, which was trained on insect data.</p>
+        </div>
+        <hr class="readme-divider"/>
+        <div class="readme-section">
+          <h3>Understanding GO Terms</h3>
+          <p>Each prediction shows a GO term ID (e.g. GO:0004672) and its name. Clicking the GO ID opens <a href="https://amigo.geneontology.org" target="_blank" rel="noopener">AmiGO</a>, the Gene Ontology browser, where you can explore the term's definition, its place in the GO hierarchy, and which proteins are annotated with it. For broader context and ontology navigation, <a href="https://www.geneontology.org" target="_blank" rel="noopener">geneontology.org</a> provides the full ontology and annotation data.</p>
+        </div>
+        <hr class="readme-divider"/>
+        <div class="readme-section">
+          <h3>Confidence Levels</h3>
+          <ul>
+            <li><strong>High (≥80%)</strong> — strong prediction, consistent with the training distribution.</li>
+            <li><strong>Medium (55–80%)</strong> — moderate confidence, hidden by default to reduce noise. Toggle with the toolbar button.</li>
+            <li><strong>Low (&lt;55%)</strong> — uncertain, hidden by default. Use cautiously as supplementary signal only.</li>
+          </ul>
+        </div>
+        <hr class="readme-divider"/>
+        <div class="readme-section">
+          <h3>Filters & Downloads</h3>
+          <p>Use the toolbar above results to filter predictions by term name, show or hide medium and low confidence results, and download results as TSV (spreadsheet-compatible) or FASTA (sequence + annotation). The prediction history panel stores your last 30 runs for quick re-access.</p>
+        </div>
+        <hr class="readme-divider"/>
+        <div class="readme-section">
+          <h3>Limitations</h3>
+          <ul>
+            <li>The model was trained primarily on insect proteins — predictions for distantly related organisms may be less accurate.</li>
+            <li>Only Molecular Function GO terms are predicted. Biological Process and Cellular Component annotations are not included.</li>
+            <li>Predictions reflect patterns in training data and are not a substitute for experimental annotation.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- end .layout -->
 
   <script>
     const ta = document.getElementById('sequenceInput');
@@ -332,32 +391,21 @@
       document.documentElement.classList.toggle('dark', dark);
       localStorage.setItem('theme', dark ? 'dark' : 'light');
     }
-
-    function toggleTheme() {
-      applyTheme(!document.documentElement.classList.contains('dark'));
-    }
-
-    // Respect saved preference, then system preference
-    const saved = localStorage.getItem('theme');
-    if (saved) {
-      applyTheme(saved === 'dark');
-    } else {
-      applyTheme(window.matchMedia('(prefers-color-scheme: dark)').matches);
-    }
+    function toggleTheme() { applyTheme(!document.documentElement.classList.contains('dark')); }
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme) applyTheme(savedTheme === 'dark');
+    else applyTheme(window.matchMedia('(prefers-color-scheme: dark)').matches);
 
     // ── Char counter ──────────────────────────────────────────────────────────
     ta.addEventListener('input', () => {
-      const seq = ta.value.split('\n').filter(l => !l.trimStart().startsWith('>')).join('').replace(/[^A-Za-z]/g,'');
+      const seq = ta.value.replace(/>/g,'').replace(/[^A-Za-z]/g,'');
       cc.textContent = seq.length ? `${seq.length.toLocaleString()} aa` : '0 aa';
     });
-
-    ta.addEventListener('keydown', e => {
-      if (e.key === 'Enter' && e.metaKey) predict();
-    });
+    ta.addEventListener('keydown', e => { if (e.key === 'Enter' && e.metaKey) predict(); });
 
     // ── Helpers ───────────────────────────────────────────────────────────────
     function confClass(p) { return p >= 0.75 ? 'conf-high' : p >= 0.55 ? 'conf-med' : 'conf-low'; }
-    function confLabel(p) { return p >= 0.75 ? 'High' : p >= 0.55 ? 'Medium' : 'Low'; }
+    function confLabel(p) { return p >= 0.80 ? 'High' : p >= 0.60 ? 'Medium' : 'Low'; }
     function probBar(p) {
       return `<div class="prob-bar-wrap"><div class="prob-bar-fill ${confClass(p)}" style="width:${Math.round(p*100)}%"></div></div>`;
     }
@@ -365,133 +413,45 @@
       return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
     }
 
-    // ── Sequence parsing & validation ─────────────────────────────────────────
-    const MIN_SEQ_LENGTH    = 30;
-    const MIN_ENTROPY_BITS  = 2.5;
-    const MAX_DOMINANT_FRAC = 0.60;
-    const MIN_DISTINCT_AA   = 5;
-    const INVALID_AA_RE     = /[BJOUXZ]/gi;
-
-    function sequenceEntropy(seq) {
-      const upper  = seq.toUpperCase();
-      const counts = {};
-      for (const aa of upper) counts[aa] = (counts[aa] || 0) + 1;
-      const n = upper.length;
-      return -Object.values(counts).reduce((h, c) => h + (c / n) * Math.log2(c / n), 0);
-    }
-
-    function parseSequences(raw) {
-      const lines = raw.split('\n');
-      const seqs  = [];
-      let current = null;
-      for (const line of lines) {
-        const trimmed = line.trim();
-        if (trimmed.startsWith('>')) {
-          if (current) seqs.push(current);
-          current = { name: trimmed.slice(1).trim() || `Sequence ${seqs.length + 1}`, residues: '' };
-        } else if (trimmed) {
-          if (!current) current = { name: `Sequence ${seqs.length + 1}`, residues: '' };
-          current.residues += trimmed.replace(/\s+/g, '');
-        }
-      }
-      if (current) seqs.push(current);
-      return seqs;
-    }
-
-    function validateSequences(seqs) {
-      const errors = [];
-      for (const seq of seqs) {
-        const label = `"${escHtml(seq.name)}"`;
-        const res   = seq.residues;
-
-        if (res.length === 0) {
-          errors.push(`${label}: sequence is empty.`);
-          continue;
-        }
-        if (res.length < MIN_SEQ_LENGTH) {
-          errors.push(`${label}: too short (${res.length} aa — minimum ${MIN_SEQ_LENGTH} aa). ` +
-            `Sequences this short are unlikely to fold into a stable domain.`);
-          continue; // skip remaining checks on an unusably short sequence
-        }
-
-        const badChars = [...new Set((res.match(INVALID_AA_RE) || []).map(c => c.toUpperCase()))];
-        if (badChars.length > 0) {
-          errors.push(`${label}: contains invalid amino acid character(s): ${badChars.join(', ')}. ` +
-            `Ambiguity codes are not accepted.`);
-        }
-
-        // Distinct residue count
-        const upper   = res.toUpperCase();
-        const counts  = {};
-        for (const aa of upper) counts[aa] = (counts[aa] || 0) + 1;
-        const distinct = Object.keys(counts).length;
-        if (distinct < MIN_DISTINCT_AA) {
-          errors.push(`${label}: only ${distinct} distinct residue type(s). ` +
-            `Real proteins require at least ${MIN_DISTINCT_AA} — ` +
-            `this sequence appears synthetic or degenerate.`);
-          continue;
-        }
-
-        // Single-residue dominance
-        const maxCount   = Math.max(...Object.values(counts));
-        const domFrac    = maxCount / res.length;
-        const domAA      = Object.keys(counts).find(k => counts[k] === maxCount);
-        if (domFrac > MAX_DOMINANT_FRAC) {
-          errors.push(`${label}: dominated by a single residue ` +
-            `(${domAA} = ${Math.round(domFrac * 100)}%). ` +
-            `Low-complexity sequences produce unreliable embeddings.`);
-          continue;
-        }
-
-        // Shannon entropy
-        const H = sequenceEntropy(res);
-        if (H < MIN_ENTROPY_BITS) {
-          errors.push(`${label}: very low sequence complexity ` +
-            `(Shannon entropy ${H.toFixed(2)} bits — minimum ${MIN_ENTROPY_BITS} bits). ` +
-            `Repetitive or artificially constructed sequences are not accepted.`);
-        }
-      }
-      return errors;
-    }
+    // ── State ─────────────────────────────────────────────────────────────────
+    let allResults   = [];    // full results from last predict
+    let showMed      = true;  // medium confidence visible
+    let showLow      = false; // low confidence hidden by default
+    let currentPage  = 1;
+    const PAGE_SIZE  = 10;
 
     // ── Predict ───────────────────────────────────────────────────────────────
     async function predict() {
-      const raw = ta.value.trim();
-      if (!raw) { shake(); return; }
+      const seq = ta.value.trim();
+      if (!seq) { shake(); return; }
 
       const btn    = document.getElementById('predictBtn');
       const status = document.getElementById('status');
-      const results= document.getElementById('results');
-
-      // ── Client-side validation ──────────────────────────────────────────────
-      const seqs   = parseSequences(raw);
-      if (seqs.length === 0) { shake(); return; }
-
-      const validationErrors = validateSequences(seqs);
-      if (validationErrors.length > 0) {
-        status.className  = 'status visible';
-        status.innerHTML  = `<span class="err-msg">⚠ ${validationErrors.join('<br>⚠ ')}</span>`;
-        results.innerHTML = '';
-        shake();
-        return;
-      }
 
       btn.disabled = true;
       btn.querySelector('.btn-label').textContent = 'Running…';
       status.className = 'status visible';
       status.innerHTML = '<div class="spinner"></div><span>Running ESM-2 embeddings…</span>';
-      results.innerHTML = '';
+      document.getElementById('results').innerHTML = '';
+      document.getElementById('pagination').style.display = 'none';
+      document.getElementById('resultsToolbar').style.display = 'none';
 
       try {
         const res  = await fetch('/predict', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ sequence: raw }),
+          body: JSON.stringify({ sequence: seq }),
         });
         if (!res.ok) throw new Error(`Server error ${res.status}`);
         const data = await res.json();
         status.className = 'status hidden';
-        renderResults(data.results);
+        allResults  = data.results || [];
+        currentPage = 1;
+        renderPage();
+        if (allResults.length > 0) {
+          document.getElementById('resultsToolbar').style.display = 'flex';
+          addToHistory(allResults, seq);
+        }
       } catch(e) {
         status.className = 'status visible';
         status.innerHTML = `<span class="err-msg">⚠ ${escHtml(e.message)}</span>`;
@@ -501,105 +461,254 @@
       }
     }
 
-    function predRowHTML(p, extraClass = '') {
-      return `
-        <div class="pred-row ${confClass(p.prob)} ${extraClass}">
-          <div class="pred-main">
-            <span class="pred-name">${escHtml(p.name)}</span>
-            <span class="pred-goid"><a href="https://amigo.geneontology.org/amigo/term/${p.go_id}" target="_blank" rel="noopener">${escHtml(p.go_id)}</a></span>
-            ${extraClass === 'suppressed' ? '<span class="suppressed-reason">Parent term not predicted above threshold</span>' : ''}
-          </div>
-          <div class="pred-right">
-            <span class="pred-conf-label">${confLabel(p.prob)}</span>
-            <span class="pred-prob">${(p.prob * 100).toFixed(1)}%</span>
-            ${probBar(p.prob)}
-          </div>
-        </div>`;
+    // ── Pagination ────────────────────────────────────────────────────────────
+    function renderPage() {
+      const start    = (currentPage - 1) * PAGE_SIZE;
+      const pageData = allResults.slice(start, start + PAGE_SIZE);
+      renderResults(pageData, start);
+      renderPagination();
     }
 
-    function renderResults(results) {
+    function renderPagination() {
+      const total    = Math.ceil(allResults.length / PAGE_SIZE);
+      const pag      = document.getElementById('pagination');
+      if (total <= 1) { pag.style.display = 'none'; return; }
+      pag.style.display = 'flex';
+      let html = `<button class="page-btn" onclick="goPage(${currentPage-1})" ${currentPage===1?'disabled':''}>‹ Prev</button>`;
+      for (let i = 1; i <= total; i++) {
+        html += `<button class="page-btn ${i===currentPage?'active':''}" onclick="goPage(${i})">${i}</button>`;
+      }
+      html += `<button class="page-btn" onclick="goPage(${currentPage+1})" ${currentPage===total?'disabled':''}>Next ›</button>`;
+      html += `<span class="page-info">${allResults.length} sequences · page ${currentPage}/${total}</span>`;
+      pag.innerHTML = html;
+    }
+
+    function goPage(p) {
+      const total = Math.ceil(allResults.length / PAGE_SIZE);
+      if (p < 1 || p > total) return;
+      currentPage = p;
+      renderPage();
+      window.scrollTo({ top: document.getElementById('results').offsetTop - 20, behavior: 'smooth' });
+    }
+
+    // ── Render results ────────────────────────────────────────────────────────
+    function renderResults(results, offset) {
       const container = document.getElementById('results');
       if (!results || results.length === 0) {
         container.innerHTML = '<p class="empty-state">No results returned.</p>';
         return;
       }
       container.innerHTML = results.map((r, idx) => {
+        const globalIdx = (offset || 0) + idx;
         if (r.error) {
           return `<div class="result-card error-card">
             <div class="result-header">
               <div class="result-header-left">
-                <span class="seq-name">${escHtml(r.name || `Sequence ${idx+1}`)}</span>
+                <span class="seq-name">${escHtml(r.name || `Sequence ${globalIdx+1}`)}</span>
               </div>
               <span class="seq-error">${escHtml(r.error)}</span>
             </div>
           </div>`;
         }
-
-        const preds      = r.predictions  || [];
-        const suppressed = r.suppressed   || [];
-        const nTotal     = r.n_above_threshold ?? preds.length;
-        const seqName    = r.name || `Sequence ${idx+1}`;
+        const preds   = r.predictions || [];
+        const seqName = r.name || `Sequence ${globalIdx+1}`;
+        const highCount = preds.filter(p => p.prob >= 0.75).length;
+        const medCount  = preds.filter(p => p.prob >= 0.55 && p.prob < 0.75).length;
+        const lowCount  = preds.filter(p => p.prob < 0.55).length;
 
         const predHTML = preds.length === 0
           ? '<p class="no-preds">No functions predicted above confidence threshold.</p>'
-          : preds.map(p => predRowHTML(p)).join('');
+          : preds.map(p => {
+              const cc2   = confClass(p.prob);
+              const isMed = cc2 === 'conf-med';
+              const isLow = cc2 === 'conf-low';
+              const hiddenClass = (isMed && !showMed) ? ' hidden-med' : (isLow && !showLow) ? ' hidden-low' : '';
+              return `<div class="pred-row ${cc2}${hiddenClass}" data-name="${escHtml(p.name.toLowerCase())}" data-goid="${escHtml(p.go_id)}">
+                <div class="pred-main">
+                  <span class="pred-name">${escHtml(p.name)}</span>
+                  <span class="pred-goid"><a href="https://amigo.geneontology.org/amigo/term/${p.go_id}" target="_blank" rel="noopener">${escHtml(p.go_id)}</a></span>
+                </div>
+                <div class="pred-right">
+                  <span class="pred-conf-label">${confLabel(p.prob)}</span>
+                  <span class="pred-prob">${(p.prob*100).toFixed(1)}%</span>
+                  ${probBar(p.prob)}
+                </div>
+              </div>`;
+            }).join('');
 
-        const suppressedHTML = suppressed.length === 0 ? '' : `
-          <button
-            class="suppressed-toggle"
-            aria-expanded="false"
-            onclick="toggleSuppressed(this)">
-            <span class="toggle-icon">▶</span>
-            ${suppressed.length} potential function${suppressed.length > 1 ? 's' : ''} hidden
-            <span class="suppressed-tooltip">parent term not predicted — click to inspect</span>
-          </button>
-          <div class="suppressed-list">
-            ${suppressed.map(p => predRowHTML(p, 'suppressed')).join('')}
-          </div>`;
+        const medCollapseRow = medCount > 0
+          ? `<div class="med-collapsed-row ${!showMed ? 'show' : ''}" id="medrow-${globalIdx}">
+               <button class="show-med-inline" onclick="toggleMed()">Show ${medCount} medium confidence result${medCount>1?'s':''}</button>
+             </div>`
+          : '';
 
         return `
-          <div class="result-card" style="animation-delay:${idx*60}ms">
+          <div class="result-card" style="animation-delay:${idx*60}ms" data-idx="${globalIdx}">
             <div class="result-header">
               <div class="result-header-left">
                 <span class="seq-name">${escHtml(seqName)}</span>
                 <span class="seq-len-pill">${r.sequence_length || '?'} aa</span>
               </div>
               <div class="result-stats">
-                <span class="stat-chip">${preds.length} shown</span>
-                ${suppressed.length > 0
-                  ? `<span class="stat-chip muted">${suppressed.length} suppressed</span>`
-                  : (nTotal > preds.length
-                    ? `<span class="stat-chip muted">${nTotal - preds.length} trimmed</span>`
-                    : '')}
+                <span class="stat-chip">${highCount} high</span>
+                ${medCount ? `<span class="stat-chip" style="color:var(--med-text);background:var(--med-bg)">${medCount} med</span>` : ''}
+                ${lowCount ? `<span class="stat-chip muted">${lowCount} low</span>` : ''}
               </div>
             </div>
-            <div class="pred-list">${predHTML}</div>
-            ${suppressedHTML}
+            <div class="pred-list">${predHTML}${medCollapseRow}</div>
           </div>`;
       }).join('');
+
+      applyFilters();
     }
 
-    function toggleSuppressed(btn) {
-      const expanded = btn.getAttribute('aria-expanded') === 'true';
-      btn.setAttribute('aria-expanded', String(!expanded));
-      const list = btn.nextElementSibling;
-      list.classList.toggle('open', !expanded);
+    // ── Filters ───────────────────────────────────────────────────────────────
+    function applyFilters() {
+      const query = (document.getElementById('termFilter').value || '').toLowerCase().trim();
+      document.querySelectorAll('.pred-row').forEach(row => {
+        const name  = row.dataset.name  || '';
+        const goid  = row.dataset.goid  || '';
+        const isMed = row.classList.contains('conf-med');
+        const isLow = row.classList.contains('conf-low');
+        const hiddenByConf = (isMed && !showMed) || (isLow && !showLow);
+        const hiddenByFilter = query && !name.includes(query) && !goid.includes(query);
+        row.classList.toggle('hidden-med', isMed && !showMed);
+        row.classList.toggle('hidden-low', isLow && !showLow);
+        row.classList.toggle('filtered-out', !hiddenByConf && hiddenByFilter);
+      });
     }
 
-    // ── Demo sequences
+    function toggleMed() {
+      showMed = !showMed;
+      document.getElementById('toggleMedBtn').textContent = showMed ? 'Hide Medium' : 'Show Medium';
+      document.querySelectorAll('.med-collapsed-row').forEach(r => r.classList.toggle('show', !showMed));
+      applyFilters();
+    }
+
+    function toggleLow() {
+      showLow = !showLow;
+      document.getElementById('toggleLowBtn').textContent = showLow ? 'Hide Low' : 'Show Low';
+      applyFilters();
+    }
+
+    // ── Downloads ─────────────────────────────────────────────────────────────
+    function downloadTSV() {
+      if (!allResults.length) return;
+      const rows = ['Protein\tLength\tGO_ID\tFunction\tConfidence'];
+      for (const r of allResults) {
+        if (r.error) continue;
+        for (const p of (r.predictions || [])) {
+          rows.push([r.name, r.sequence_length, p.go_id, p.name, (p.prob*100).toFixed(1)+'%'].join('\t'));
+        }
+      }
+      triggerDownload(rows.join('\n'), 'protfunc_results.tsv', 'text/tab-separated-values');
+    }
+
+    function downloadFASTA() {
+      if (!allResults.length) return;
+      const lines = [];
+      for (const r of allResults) {
+        if (r.error) continue;
+        const goList = (r.predictions || []).map(p => `${p.go_id}|${p.name}|${(p.prob*100).toFixed(1)}%`).join('; ');
+        lines.push(`>${r.name} [${r.sequence_length} aa] GO:MF=${goList}`);
+        // sequence not returned by server — note this in the file
+        lines.push('; sequence not included (submit FASTA input to preserve sequence)');
+      }
+      triggerDownload(lines.join('\n'), 'protfunc_results.fasta', 'text/plain');
+    }
+
+    function triggerDownload(content, filename, mime) {
+      const blob = new Blob([content], { type: mime });
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href = url; a.download = filename; a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    // ── History ───────────────────────────────────────────────────────────────
+    const HISTORY_KEY = 'protfunc_history';
+    const HISTORY_MAX = 30;
+
+    function loadHistory() {
+      try { return JSON.parse(localStorage.getItem(HISTORY_KEY)) || []; }
+      catch { return []; }
+    }
+
+    function saveHistory(h) {
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(h.slice(0, HISTORY_MAX)));
+    }
+
+    function addToHistory(results, inputSeq) {
+      const h    = loadHistory();
+      const name = results[0]?.name || 'Unknown';
+      const n    = results.length;
+      h.unshift({ name, n, ts: Date.now(), results, inputSeq });
+      saveHistory(h);
+      renderHistory();
+    }
+
+    function renderHistory() {
+      const h     = loadHistory();
+      const meta  = document.getElementById('historyMeta');
+      const list  = document.getElementById('historyList');
+      meta.textContent = `${h.length} / ${HISTORY_MAX}`;
+      if (h.length === 0) {
+        list.innerHTML = '<div class="history-empty">No predictions yet.</div>';
+        return;
+      }
+      list.innerHTML = `<div class="history-list">` +
+        h.map((entry, i) => {
+          const date = new Date(entry.ts).toLocaleString(undefined, { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
+          const label = entry.n > 1 ? `${entry.name} +${entry.n-1} more` : entry.name;
+          return `<div class="history-item" onclick="restoreHistory(${i})">
+            <span class="history-item-name">${escHtml(label)}</span>
+            <span class="history-item-meta">${date}</span>
+          </div>`;
+        }).join('') +
+      `</div>`;
+    }
+
+    function restoreHistory(i) {
+      const h = loadHistory();
+      if (!h[i]) return;
+      allResults  = h[i].results;
+      currentPage = 1;
+      ta.value    = h[i].inputSeq || '';
+      const seq   = ta.value.replace(/>/g,'').replace(/[^A-Za-z]/g,'');
+      cc.textContent = seq.length ? `${seq.length.toLocaleString()} aa` : '0 aa';
+      document.getElementById('resultsToolbar').style.display = 'flex';
+      renderPage();
+    }
+
+    function toggleHistory() {
+      const list    = document.getElementById('historyList');
+      const toggle  = document.getElementById('historyToggle');
+      const visible = list.style.display !== 'none';
+      list.style.display  = visible ? 'none' : 'block';
+      toggle.textContent  = visible ? '▾ Show' : '▴ Hide';
+    }
+
+    // ── README ────────────────────────────────────────────────────────────────
+    function toggleReadme() {
+      const body   = document.getElementById('readmeBody');
+      const toggle = document.getElementById('readmeToggle');
+      const open   = body.classList.toggle('open');
+      toggle.textContent = open ? '▴ Hide' : '▾ Show';
+    }
+
+    // ── Demo sequences ────────────────────────────────────────────────────────
     const DEMOS = {
       hippo: `>Drosophila_Hippo_kinase
 MSEPEVTSVVDMKSPNISSSCSFFKLKKLSEESLLQPPEKVFDIMYKLGEGSYGSVYKAVHKESSSIVAIKLVPVESDLHEIIKEISIMQQCDSPYVVRYYGSYFKQYDLWICMEYCGAGSVSDIMRLRKKTLTEDEIATILSDTLQGLVYLHLRRKIHRDIKAANILLNTEGYAKLADFGVAGQLTDTMAKRNTVIGTPFWMAPEVIEEIGYDCVADIWSLGITALEMAEGKPPYGEIHPMRAIFMIPQKPPPSFREPDRWSTEFIDFVSKCLVKEPDDRATATELLEHEFIRNAKHRSILKPMLEETCAIREQQRANRSFGGVLAASQAKSLATQENGMQQHITDNAFMEDPGTLVPEKFGEYQQSSASDATMIAHAEQGVDEGTLGPGGLRNLSKAAAPAAASSAASPLDMPAVDSGTMVELESNLGTMVINSDSDDSTTAKNNDDQKPRNRYRPQFLEHFDRKNAGDGRGDEKPIATEYSPAAAEQQQQQQQQQQQQQQDEQHLASGANDLNNWEHNMEMQFQQISAINQYGLQQHQQQQQVLMAYPLMNEQLIALNNQPNLLLSNAAPMGQQGIPAAAPAQPPPAYQNQHMHTQSHAYVEGEFEFLKFLTFDDLNQRLCNIDHEMELEIEQLNKKYNAKRQPIVDAMNAKRKRQQNINNNLIKI`,
       opsin: `>Drosophila_Opsin_Rh6
 MASLHPPSFAYMRDGRNLSLAESVPAEIMHMVDPYWYQWPPLEPMWFGIIGFVIAILGTMSLAGNFIVMYIFTSSKGLRTPSNMFVVNLAFSDFMMMFTMFPPVVLNGFYGTWIMGPFLCELYGMFGSLFGCVSIWSMTLIAYDRYCVIVKGMARKPLTATAAVLRLMVVWTICGAWALMPLFGWNRYVPEGNMTACGTDYFAKDWWNRSYIIVYSLWVYLTPLLTIIFSYWHIMKAVAAHEKAMREQAKKMNVASLRNSEADKSKAIEIKLAKVALTTISLWFFAWTPYTIINYAGIFESMHLSPLSTICGSVFAKANAVCNPIVYGLSHPKYKQVLREKMPCLACGKDDLTSDSRTQATAEISESQA`
-      
     };
 
     function loadDemo(key) {
       const seq = DEMOS[key];
       if (!seq) return;
       ta.value = seq;
-      const aa = seq.split('\n').filter(l => !l.trimStart().startsWith('>')).join('').replace(/[^A-Za-z]/g,'');
+      const aa = seq.replace(/>/g,'').replace(/[^A-Za-z]/g,'');
       cc.textContent = aa.length ? `${aa.length.toLocaleString()} aa` : '0 aa';
       ta.focus();
     }
@@ -609,6 +718,9 @@ MASLHPPSFAYMRDGRNLSLAESVPAEIMHMVDPYWYQWPPLEPMWFGIIGFVIAILGTMSLAGNFIVMYIFTSSKGLRT
       card.classList.add('shake');
       card.addEventListener('animationend', () => card.classList.remove('shake'), { once: true });
     }
+
+    // ── Init ──────────────────────────────────────────────────────────────────
+    renderHistory();
   </script>
 </body>
 </html>
