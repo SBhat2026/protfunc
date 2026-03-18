@@ -1,7 +1,7 @@
 fastapi
 uvicorn
 torch
-esm
+fair-esm
 pandas
 joblib
 scikit-learn==1.7.1
