@@ -1,11 +1,9 @@
 fastapi
 uvicorn
-pydantic
---extra-index-url https://download.pytorch.org/whl/cpu
 torch
-fair-esm
+esm
 pandas
 joblib
-scikit-learn
-python-multipart
+scikit-learn==1.7.1
 huggingface_hub
+pydantic
