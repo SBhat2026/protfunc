@@ -3,441 +3,1423 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>ProtFunc — GO Molecular Function Predictor</title>
+  <title>ProtFunc - Protein Function Prediction</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg:            #f5f5f7;
-      --surface:       #ffffff;
-      --surface-2:     #f9f9fb;
-      --border:        rgba(0,0,0,0.08);
-      --border-strong: rgba(0,0,0,0.14);
-      --text-primary:  #1d1d1f;
-      --text-2:        #3d3d3f;
-      --text-muted:    #86868b;
-      --accent:        #0071e3;
-      --accent-hover:  #0077ed;
-      --accent-dim:    rgba(0,113,227,0.1);
-      --high-bg: #e8f5f0; --high-border: #b2dece; --high-text: #1a4a3a; --high-bar: #34c98a;
-      --med-bg:  #fff8e6; --med-border:  #f5d98c; --med-text:  #5c3d00; --med-bar:  #f5a623;
-      --low-bg:  #fff2f2; --low-border:  #f5c0c0; --low-text:  #5c1a1a; --low-bar:  #ff5f5f;
-      --radius-sm: 8px; --radius-md: 14px; --radius-lg: 20px;
-      --shadow-card: 0 1px 3px rgba(0,0,0,0.06), 0 8px 24px rgba(0,0,0,0.05);
-      --shadow-card-hover: 0 2px 6px rgba(0,0,0,0.08), 0 16px 40px rgba(0,0,0,0.08);
-      --blob1: #b3d9ff; --blob2: #c9f0e4; --blob3: #ddd6ff;
+      --bg: #0a0a0b;
+      --bg-secondary: #111113;
+      --surface: #18181b;
+      --surface-2: #1f1f23;
+      --surface-3: #27272a;
+      --border: rgba(255,255,255,0.08);
+      --border-strong: rgba(255,255,255,0.15);
+      --text-primary: #fafafa;
+      --text-secondary: #a1a1aa;
+      --text-muted: #71717a;
+      --accent: #22c55e;
+      --accent-hover: #16a34a;
+      --accent-dim: rgba(34,197,94,0.15);
+      --accent-blue: #3b82f6;
+      --accent-blue-dim: rgba(59,130,246,0.15);
+      --high-bg: rgba(34,197,94,0.1);
+      --high-border: rgba(34,197,94,0.3);
+      --high-text: #4ade80;
+      --high-bar: #22c55e;
+      --med-bg: rgba(234,179,8,0.1);
+      --med-border: rgba(234,179,8,0.3);
+      --med-text: #facc15;
+      --med-bar: #eab308;
+      --low-bg: rgba(239,68,68,0.1);
+      --low-border: rgba(239,68,68,0.3);
+      --low-text: #f87171;
+      --low-bar: #ef4444;
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
+      --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
+      --shadow-lg: 0 8px 24px rgba(0,0,0,0.5);
     }
-    html.dark {
-      --bg: #0d0d0f; --surface: #1c1c1e; --surface-2: #2c2c2e;
-      --border: rgba(255,255,255,0.08); --border-strong: rgba(255,255,255,0.14);
-      --text-primary: #f5f5f7; --text-2: #d1d1d6; --text-muted: #636366;
-      --accent: #2997ff; --accent-hover: #47a8ff; --accent-dim: rgba(41,151,255,0.15);
-      --high-bg: #0d2e22; --high-border: #1a5c40; --high-text: #6ee7b7; --high-bar: #34c98a;
-      --med-bg:  #2a1f00; --med-border:  #5c3d00; --med-text:  #fcd34d; --med-bar:  #f5a623;
-      --low-bg:  #2a0d0d; --low-border:  #5c1a1a; --low-text:  #fca5a5; --low-bar:  #ff5f5f;
-      --shadow-card: 0 1px 3px rgba(0,0,0,0.3), 0 8px 24px rgba(0,0,0,0.25);
-      --shadow-card-hover: 0 2px 6px rgba(0,0,0,0.4), 0 16px 40px rgba(0,0,0,0.35);
-      --blob1: rgba(41,151,255,0.3); --blob2: rgba(52,201,138,0.2); --blob3: rgba(167,139,250,0.2);
+
+    html.light {
+      --bg: #fafafa;
+      --bg-secondary: #f4f4f5;
+      --surface: #ffffff;
+      --surface-2: #f9f9f9;
+      --surface-3: #f4f4f5;
+      --border: rgba(0,0,0,0.08);
+      --border-strong: rgba(0,0,0,0.15);
+      --text-primary: #09090b;
+      --text-secondary: #52525b;
+      --text-muted: #a1a1aa;
+      --accent: #16a34a;
+      --accent-hover: #15803d;
+      --accent-dim: rgba(22,163,74,0.1);
+      --accent-blue: #2563eb;
+      --accent-blue-dim: rgba(37,99,235,0.1);
+      --high-bg: rgba(22,163,74,0.08);
+      --high-border: rgba(22,163,74,0.25);
+      --high-text: #15803d;
+      --med-bg: rgba(202,138,4,0.08);
+      --med-border: rgba(202,138,4,0.25);
+      --med-text: #a16207;
+      --low-bg: rgba(220,38,38,0.08);
+      --low-border: rgba(220,38,38,0.25);
+      --low-text: #b91c1c;
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+      --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+      --shadow-lg: 0 8px 24px rgba(0,0,0,0.12);
     }
 
-    html { font-size: 15px; -webkit-font-smoothing: antialiased; }
-    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background: var(--bg); color: var(--text-primary); min-height: 100vh; overflow-x: hidden; transition: background 0.25s, color 0.25s; }
+    html { font-size: 14px; -webkit-font-smoothing: antialiased; scroll-behavior: smooth; }
+    body { 
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; 
+      background: var(--bg); 
+      color: var(--text-primary); 
+      min-height: 100vh;
+      line-height: 1.5;
+    }
 
-    .bg-mesh { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
-    .mesh-blob { position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.35; }
-    .blob-1 { width: 600px; height: 600px; top: -180px; right: -120px; background: radial-gradient(circle, var(--blob1) 0%, transparent 70%); animation: drift1 18s ease-in-out infinite alternate; }
-    .blob-2 { width: 400px; height: 400px; bottom: 10%; left: -80px; background: radial-gradient(circle, var(--blob2) 0%, transparent 70%); animation: drift2 22s ease-in-out infinite alternate; }
-    .blob-3 { width: 300px; height: 300px; top: 40%; right: 10%; background: radial-gradient(circle, var(--blob3) 0%, transparent 70%); animation: drift1 26s ease-in-out infinite alternate-reverse; }
-    @keyframes drift1 { from { transform: translate(0,0) scale(1); } to { transform: translate(30px,20px) scale(1.06); } }
-    @keyframes drift2 { from { transform: translate(0,0) scale(1); } to { transform: translate(-20px,30px) scale(1.04); } }
+    /* Layout */
+    .app-layout {
+      display: flex;
+      min-height: 100vh;
+    }
 
-    .layout { position: relative; z-index: 1; max-width: 820px; margin: 0 auto; padding: 48px 24px 80px; display: flex; flex-direction: column; gap: 28px; }
+    /* Sidebar */
+    .sidebar {
+      width: 260px;
+      background: var(--bg-secondary);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      z-index: 100;
+      transition: transform 0.2s ease;
+    }
 
-    /* ── Header ── */
-    .header { display: flex; align-items: center; justify-content: space-between; }
-    .logo { display: flex; align-items: center; gap: 10px; color: var(--text-primary); text-decoration: none; }
-    .logo-icon { width: 28px; height: 28px; color: var(--accent); flex-shrink: 0; }
-    .logo-text { font-size: 1.05rem; font-weight: 600; letter-spacing: -0.02em; }
-    .header-right { display: flex; align-items: center; gap: 8px; }
-    .badge { font-size: 0.72rem; font-weight: 500; letter-spacing: 0.02em; color: var(--text-muted); background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 3px 10px; }
-    .icon-btn { width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--border); background: var(--surface); color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.15s, border-color 0.15s, transform 0.15s; flex-shrink: 0; }
-    .icon-btn:hover { background: var(--surface-2); border-color: var(--border-strong); transform: scale(1.08); }
-    .icon-btn svg { width: 16px; height: 16px; }
-    .icon-sun { display: none; } .icon-moon { display: block; }
-    html.dark .icon-sun { display: block; } html.dark .icon-moon { display: none; }
+    .sidebar-header {
+      padding: 20px;
+      border-bottom: 1px solid var(--border);
+    }
 
-    /* ── Hero ── */
-    .hero { padding: 8px 0 4px; }
-    .hero-title { font-size: clamp(2rem, 5vw, 2.8rem); font-weight: 600; letter-spacing: -0.04em; line-height: 1.12; margin-bottom: 14px; }
-    .hero-sub { font-size: 0.95rem; line-height: 1.65; color: var(--text-muted); max-width: 520px; }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      color: var(--text-primary);
+    }
 
-    /* ── Cards ── */
-    .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-card); transition: box-shadow 0.2s, background 0.25s, border-color 0.25s; }
-    .input-card { padding: 20px 20px 16px; display: flex; flex-direction: column; gap: 12px; }
-    .card-label { display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; font-weight: 500; color: var(--text-muted); letter-spacing: 0.04em; text-transform: uppercase; }
-    .char-count { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--text-muted); }
+    .logo-icon {
+      width: 32px;
+      height: 32px;
+      background: var(--accent);
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+    }
 
-    /* ── Textarea ── */
-    .seq-textarea { width: 100%; min-height: 160px; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface-2); padding: 14px 16px; font-family: 'JetBrains Mono', monospace; font-size: 0.82rem; line-height: 1.7; color: var(--text-primary); resize: vertical; outline: none; transition: border-color 0.15s, background 0.15s; }
-    .seq-textarea::placeholder { color: var(--text-muted); }
-    .seq-textarea:focus { border-color: var(--accent); background: var(--surface); box-shadow: 0 0 0 3px var(--accent-dim); }
+    .logo-text {
+      font-size: 1.1rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
 
-    /* ── Input footer ── */
-    .input-footer { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
-    .input-hints { display: flex; gap: 6px; }
-    .hint-tag { font-size: 0.7rem; font-weight: 500; color: var(--text-muted); background: var(--surface-2); border: 1px solid var(--border); border-radius: 6px; padding: 3px 8px; }
+    .logo-badge {
+      font-size: 0.65rem;
+      font-weight: 500;
+      color: var(--accent);
+      background: var(--accent-dim);
+      padding: 2px 6px;
+      border-radius: 4px;
+      margin-left: auto;
+    }
 
-    .btn-predict { display: flex; align-items: center; gap: 8px; background: var(--accent); color: #fff; border: none; border-radius: var(--radius-sm); padding: 10px 20px; font-size: 0.875rem; font-weight: 500; cursor: pointer; transition: background 0.15s, transform 0.1s, opacity 0.15s; white-space: nowrap; }
-    .btn-predict:hover { background: var(--accent-hover); transform: translateY(-1px); }
-    .btn-predict:active { transform: translateY(0); }
-    .btn-predict:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
-    .btn-icon { font-size: 1rem; transition: transform 0.2s; }
-    .btn-predict:hover .btn-icon { transform: translateX(3px); }
+    .sidebar-nav {
+      flex: 1;
+      padding: 16px 12px;
+      overflow-y: auto;
+    }
 
-    @keyframes shake { 0%,100% { transform: translateX(0); } 20%,60% { transform: translateX(-5px); } 40%,80% { transform: translateX(5px); } }
-    .shake { animation: shake 0.35s ease; }
+    .nav-section {
+      margin-bottom: 24px;
+    }
 
-    /* ── Status ── */
-    .status { display: flex; align-items: center; gap: 10px; padding: 12px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); font-size: 0.875rem; color: var(--text-2); }
-    .status.hidden { display: none; } .status.visible { display: flex; }
-    .err-msg { color: #ff5f5f; font-weight: 500; }
-    .spinner { width: 16px; height: 16px; flex-shrink: 0; border: 2px solid var(--border-strong); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; }
+    .nav-section-title {
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 0 8px;
+      margin-bottom: 8px;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: var(--radius-sm);
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      border: none;
+      background: transparent;
+      width: 100%;
+      text-align: left;
+    }
+
+    .nav-item:hover {
+      background: var(--surface);
+      color: var(--text-primary);
+    }
+
+    .nav-item.active {
+      background: var(--accent-dim);
+      color: var(--accent);
+    }
+
+    .nav-item svg {
+      width: 18px;
+      height: 18px;
+      flex-shrink: 0;
+    }
+
+    .sidebar-footer {
+      padding: 16px 12px;
+      border-top: 1px solid var(--border);
+    }
+
+    /* Main content */
+    .main-content {
+      flex: 1;
+      margin-left: 260px;
+      min-height: 100vh;
+    }
+
+    /* Top bar */
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 32px;
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    .topbar-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .page-title {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .topbar-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .model-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+    }
+
+    .model-badge .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+    }
+
+    .icon-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text-secondary);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s ease;
+    }
+
+    .icon-btn:hover {
+      background: var(--surface-2);
+      color: var(--text-primary);
+      border-color: var(--border-strong);
+    }
+
+    .icon-btn svg { width: 18px; height: 18px; }
+
+    /* Page content */
+    .page-content {
+      padding: 32px;
+      max-width: 1200px;
+    }
+
+    /* Cards */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface-2);
+    }
+
+    .card-title {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .card-body {
+      padding: 20px;
+    }
+
+    /* Input section */
+    .input-section {
+      margin-bottom: 24px;
+    }
+
+    .input-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .input-label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .char-count {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .textarea-wrapper {
+      position: relative;
+    }
+
+    .seq-textarea {
+      width: 100%;
+      min-height: 180px;
+      padding: 16px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      background: var(--bg);
+      color: var(--text-primary);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      line-height: 1.7;
+      resize: vertical;
+      outline: none;
+      transition: all 0.15s ease;
+    }
+
+    .seq-textarea::placeholder {
+      color: var(--text-muted);
+    }
+
+    .seq-textarea:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-dim);
+    }
+
+    /* Demo buttons */
+    .demo-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .demo-label {
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: var(--text-muted);
+    }
+
+    .demo-btn {
+      font-size: 0.75rem;
+      font-weight: 500;
+      padding: 4px 10px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .demo-btn:hover {
+      background: var(--accent-dim);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    /* Action bar */
+    .action-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 16px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .input-hints {
+      display: flex;
+      gap: 6px;
+    }
+
+    .hint-tag {
+      font-size: 0.7rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      background: var(--surface-2);
+      padding: 4px 8px;
+      border-radius: 4px;
+    }
+
+    .btn-primary {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 24px;
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .btn-primary:hover {
+      background: var(--accent-hover);
+      transform: translateY(-1px);
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-primary svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    /* Batch upload */
+    .batch-upload {
+      margin-top: 16px;
+      padding: 20px;
+      border: 2px dashed var(--border);
+      border-radius: var(--radius-md);
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .batch-upload:hover {
+      border-color: var(--accent);
+      background: var(--accent-dim);
+    }
+
+    .batch-upload.dragover {
+      border-color: var(--accent);
+      background: var(--accent-dim);
+    }
+
+    .batch-upload-icon {
+      width: 40px;
+      height: 40px;
+      margin: 0 auto 12px;
+      color: var(--text-muted);
+    }
+
+    .batch-upload-text {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      margin-bottom: 4px;
+    }
+
+    .batch-upload-hint {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    #fileInput {
+      display: none;
+    }
+
+    /* Status */
+    .status-bar {
+      display: none;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 20px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      margin-bottom: 24px;
+    }
+
+    .status-bar.visible {
+      display: flex;
+    }
+
+    .spinner {
+      width: 18px;
+      height: 18px;
+      border: 2px solid var(--border-strong);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* ── Demo bar ── */
-    .demo-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-    .demo-label { font-size: 0.72rem; font-weight: 500; color: var(--text-muted); letter-spacing: 0.04em; text-transform: uppercase; flex-shrink: 0; }
-    .demo-btn { font-size: 0.72rem; font-weight: 500; color: var(--accent); background: var(--accent-dim); border: 1px solid transparent; border-radius: 6px; padding: 3px 10px; cursor: pointer; transition: background 0.15s; }
-    .demo-btn:hover { background: var(--accent); color: #fff; }
+    .status-text {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+    }
 
-    /* ── Results toolbar ── */
-    .results-toolbar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; padding: 10px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); }
-    .toolbar-left { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-    .toolbar-right { display: flex; align-items: center; gap: 8px; }
-    .filter-input { font-size: 0.8rem; padding: 5px 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface-2); color: var(--text-primary); outline: none; width: 180px; transition: border-color 0.15s; }
-    .filter-input:focus { border-color: var(--accent); }
-    .filter-input::placeholder { color: var(--text-muted); }
-    .toggle-med-btn { font-size: 0.72rem; font-weight: 500; color: var(--med-text); background: var(--med-bg); border: 1px solid var(--med-border); border-radius: 6px; padding: 4px 10px; cursor: pointer; transition: opacity 0.15s; }
-    .toggle-med-btn:hover { opacity: 0.8; }
-    .toggle-low-btn { font-size: 0.72rem; font-weight: 500; color: var(--low-text); background: var(--low-bg); border: 1px solid var(--low-border); border-radius: 6px; padding: 4px 10px; cursor: pointer; transition: opacity 0.15s; }
-    .toggle-low-btn:hover { opacity: 0.8; }
-    .dl-btn { font-size: 0.72rem; font-weight: 500; color: var(--accent); background: var(--accent-dim); border: 1px solid transparent; border-radius: 6px; padding: 4px 10px; cursor: pointer; transition: background 0.15s; }
-    .dl-btn:hover { background: var(--accent); color: #fff; }
-    .dl-sep { font-size: 0.72rem; color: var(--text-muted); }
+    .status-error {
+      color: var(--low-text);
+      font-weight: 500;
+    }
 
-    /* ── Result cards ── */
-    .results-area { display: flex; flex-direction: column; gap: 18px; }
-    .result-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-card); overflow: hidden; animation: fadeUp 0.3s ease both; transition: box-shadow 0.2s; }
-    .result-card:hover { box-shadow: var(--shadow-card-hover); }
-    @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+    /* Results toolbar */
+    .results-toolbar {
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
 
-    .result-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; padding: 14px 20px; border-bottom: 1px solid var(--border); background: var(--surface-2); }
-    .result-header-left { display: flex; align-items: center; gap: 10px; }
-    .seq-name { font-size: 0.9rem; font-weight: 600; color: var(--text-primary); letter-spacing: -0.01em; font-family: 'JetBrains Mono', monospace; }
-    .seq-len-pill { font-size: 0.72rem; font-weight: 500; color: var(--text-muted); background: var(--border); border-radius: 20px; padding: 2px 9px; }
-    .result-stats { display: flex; gap: 6px; align-items: center; }
-    .stat-chip { font-size: 0.72rem; font-weight: 500; color: var(--accent); background: var(--accent-dim); border-radius: 6px; padding: 2px 8px; }
-    .stat-chip.muted { color: var(--text-muted); background: transparent; border: 1px solid var(--border); }
+    .results-toolbar.visible {
+      display: flex;
+    }
 
-    /* ── Predictions ── */
-    .pred-list { padding: 12px 16px; display: flex; flex-direction: column; gap: 6px; }
-    .no-preds { text-align: center; color: var(--text-muted); font-size: 0.875rem; padding: 24px 0 18px; }
-    .pred-row { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 12px; padding: 10px 14px; border-radius: var(--radius-sm); border: 1px solid transparent; transition: transform 0.15s, box-shadow 0.15s; cursor: default; }
-    .pred-row:hover { transform: translateX(2px); box-shadow: 0 2px 8px rgba(0,0,0,0.12); }
-    .pred-row.conf-high { background: var(--high-bg); border-color: var(--high-border); }
-    .pred-row.conf-med  { background: var(--med-bg);  border-color: var(--med-border); }
-    .pred-row.conf-low  { background: var(--low-bg);  border-color: var(--low-border); }
-    .pred-row.hidden-med { display: none; }
-    .pred-row.hidden-low { display: none; }
-    .pred-row.filtered-out { display: none; }
+    .toolbar-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
 
-    .pred-main { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
-    .pred-name { font-size: 0.875rem; font-weight: 500; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .pred-goid { font-size: 0.72rem; font-family: 'JetBrains Mono', monospace; color: var(--text-muted); }
-    .pred-goid a { color: var(--text-muted); text-decoration: none; transition: color 0.15s; }
-    .pred-goid a:hover { color: var(--accent); text-decoration: underline; }
-    .pred-right { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; min-width: 80px; }
-    .pred-conf-label { font-size: 0.68rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; }
-    .conf-high .pred-conf-label { color: var(--high-text); } .conf-med .pred-conf-label { color: var(--med-text); } .conf-low .pred-conf-label { color: var(--low-text); }
-    .pred-prob { font-size: 0.875rem; font-weight: 600; font-family: 'JetBrains Mono', monospace; }
-    .conf-high .pred-prob { color: var(--high-text); } .conf-med .pred-prob { color: var(--med-text); } .conf-low .pred-prob { color: var(--low-text); }
-    .prob-bar-wrap { width: 72px; height: 4px; background: rgba(128,128,128,0.2); border-radius: 2px; overflow: hidden; }
-    .prob-bar-fill { height: 100%; border-radius: 2px; transition: width 0.4s ease; }
-    .prob-bar-fill.conf-high { background: var(--high-bar); } .prob-bar-fill.conf-med { background: var(--med-bar); } .prob-bar-fill.conf-low { background: var(--low-bar); }
+    .filter-input {
+      padding: 8px 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--bg);
+      color: var(--text-primary);
+      font-size: 0.85rem;
+      outline: none;
+      width: 200px;
+      transition: all 0.15s ease;
+    }
 
-    /* ── Collapsed med section ── */
-    .med-collapsed-row { display: none; align-items: center; justify-content: center; padding: 8px; }
-    .med-collapsed-row.show { display: flex; }
-    .show-med-inline { font-size: 0.75rem; color: var(--med-text); background: var(--med-bg); border: 1px solid var(--med-border); border-radius: 6px; padding: 4px 12px; cursor: pointer; }
-    .show-med-inline:hover { opacity: 0.8; }
+    .filter-input:focus {
+      border-color: var(--accent);
+    }
 
-    /* ── Suppressed predictions panel ── */
+    .filter-input::placeholder {
+      color: var(--text-muted);
+    }
+
+    .filter-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--surface);
+      color: var(--text-secondary);
+      font-size: 0.8rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .filter-btn:hover {
+      background: var(--surface-2);
+      border-color: var(--border-strong);
+    }
+
+    .filter-btn.active {
+      background: var(--accent-dim);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .toolbar-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .export-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--surface);
+      color: var(--text-secondary);
+      font-size: 0.8rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .export-btn:hover {
+      background: var(--accent-blue-dim);
+      border-color: var(--accent-blue);
+      color: var(--accent-blue);
+    }
+
+    .export-btn svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    /* Results area */
+    .results-area {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* Result card */
+    .result-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      animation: slideUp 0.3s ease;
+    }
+
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .result-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 20px;
+      background: var(--surface-2);
+      border-bottom: 1px solid var(--border);
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .result-header-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .seq-name {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .seq-len {
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      background: var(--surface-3);
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
+
+    .result-stats {
+      display: flex;
+      gap: 8px;
+    }
+
+    .stat-chip {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: var(--radius-sm);
+    }
+
+    .stat-chip.high {
+      background: var(--high-bg);
+      color: var(--high-text);
+    }
+
+    .stat-chip.med {
+      background: var(--med-bg);
+      color: var(--med-text);
+    }
+
+    .stat-chip.low {
+      background: var(--low-bg);
+      color: var(--low-text);
+    }
+
+    /* Predictions */
+    .pred-list {
+      padding: 12px 16px;
+    }
+
+    .no-preds {
+      text-align: center;
+      padding: 32px;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+
+    .pred-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      border-radius: var(--radius-sm);
+      margin-bottom: 6px;
+      transition: all 0.15s ease;
+    }
+
+    .pred-row:last-child {
+      margin-bottom: 0;
+    }
+
+    .pred-row.conf-high {
+      background: var(--high-bg);
+      border: 1px solid var(--high-border);
+    }
+
+    .pred-row.conf-med {
+      background: var(--med-bg);
+      border: 1px solid var(--med-border);
+    }
+
+    .pred-row.conf-low {
+      background: var(--low-bg);
+      border: 1px solid var(--low-border);
+    }
+
+    .pred-row.hidden-med,
+    .pred-row.hidden-low,
+    .pred-row.filtered-out {
+      display: none;
+    }
+
+    .pred-main {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+      flex: 1;
+    }
+
+    .pred-name {
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+
+    .pred-goid {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .pred-goid a {
+      color: inherit;
+      text-decoration: none;
+      transition: color 0.15s ease;
+    }
+
+    .pred-goid a:hover {
+      color: var(--accent-blue);
+    }
+
+    .pred-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-shrink: 0;
+    }
+
+    .pred-conf {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 4px;
+    }
+
+    .pred-conf-label {
+      font-size: 0.65rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .conf-high .pred-conf-label { color: var(--high-text); }
+    .conf-med .pred-conf-label { color: var(--med-text); }
+    .conf-low .pred-conf-label { color: var(--low-text); }
+
+    .pred-prob {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.95rem;
+      font-weight: 600;
+    }
+
+    .conf-high .pred-prob { color: var(--high-text); }
+    .conf-med .pred-prob { color: var(--med-text); }
+    .conf-low .pred-prob { color: var(--low-text); }
+
+    .prob-bar {
+      width: 80px;
+      height: 6px;
+      background: rgba(128,128,128,0.2);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .prob-bar-fill {
+      height: 100%;
+      border-radius: 3px;
+      transition: width 0.4s ease;
+    }
+
+    .prob-bar-fill.high { background: var(--high-bar); }
+    .prob-bar-fill.med { background: var(--med-bar); }
+    .prob-bar-fill.low { background: var(--low-bar); }
+
+    /* Suppressed section */
     .suppressed-toggle {
-      display: flex; align-items: center; gap: 8px; width: 100%;
-      padding: 10px 16px; border: none; border-top: 1px dashed var(--border-strong);
-      background: transparent; color: var(--text-muted); font-size: 0.78rem;
-      font-weight: 500; cursor: pointer; text-align: left;
-      transition: color 0.15s, background 0.15s; letter-spacing: 0.01em;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+      padding: 12px 20px;
+      border: none;
+      border-top: 1px dashed var(--border-strong);
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      font-weight: 500;
+      cursor: pointer;
+      text-align: left;
+      transition: all 0.15s ease;
     }
-    .suppressed-toggle:hover { color: var(--text-2); background: var(--surface-2); }
-    .suppressed-toggle .toggle-icon { font-size: 0.65rem; transition: transform 0.2s ease; flex-shrink: 0; }
-    .suppressed-toggle[aria-expanded="true"] .toggle-icon { transform: rotate(90deg); }
-    .suppressed-tooltip { margin-left: auto; font-size: 0.68rem; color: var(--text-muted); font-style: italic; font-weight: 400; }
-    .suppressed-list { display: none; flex-direction: column; gap: 4px; padding: 8px 16px 12px; border-top: 1px dashed var(--border); background: var(--surface-2); }
-    .suppressed-list.open { display: flex; }
-    .pred-row.suppressed { opacity: 0.70; border-style: dashed; }
-    .pred-row.suppressed .pred-name { color: var(--text-muted); }
-    .suppressed-reason { font-size: 0.68rem; color: var(--text-muted); font-style: italic; margin-top: 1px; }
 
-    /* ── Error card ── */
-    .error-card { background: var(--low-bg); border-color: var(--low-border); }
-    .seq-error { font-size: 0.8rem; color: var(--low-text); font-weight: 500; }
-    .empty-state { text-align: center; color: var(--text-muted); font-size: 0.9rem; padding: 32px; }
-
-    /* ── Pagination ── */
-    .pagination { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 8px 0; }
-    .page-btn { font-size: 0.8rem; font-weight: 500; padding: 5px 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--text-2); cursor: pointer; transition: background 0.15s, border-color 0.15s; }
-    .page-btn:hover { background: var(--surface-2); border-color: var(--border-strong); }
-    .page-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
-    .page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-    .page-info { font-size: 0.8rem; color: var(--text-muted); }
-
-    /* ── History panel ── */
-    .history-panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-card); overflow: hidden; }
-    .history-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; border-bottom: 1px solid var(--border); background: var(--surface-2); cursor: pointer; user-select: none; }
-    .history-title { font-size: 0.85rem; font-weight: 600; color: var(--text-2); }
-    .history-meta { font-size: 0.75rem; color: var(--text-muted); }
-    .history-toggle { font-size: 0.75rem; color: var(--accent); }
-    .history-list { padding: 8px; display: flex; flex-direction: column; gap: 4px; }
-    .history-item { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; border-radius: var(--radius-sm); cursor: pointer; transition: background 0.12s; }
-    .history-item:hover { background: var(--surface-2); }
-    .history-item-name { font-size: 0.82rem; font-weight: 500; color: var(--text-primary); font-family: 'JetBrains Mono', monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 320px; }
-    .history-item-meta { font-size: 0.72rem; color: var(--text-muted); flex-shrink: 0; margin-left: 8px; }
-    .history-empty { padding: 20px; text-align: center; color: var(--text-muted); font-size: 0.85rem; }
-
-    /* ── README panel ── */
-    .readme-panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-card); overflow: hidden; }
-    .readme-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; border-bottom: 1px solid var(--border); background: var(--surface-2); cursor: pointer; user-select: none; }
-    .readme-title { font-size: 0.85rem; font-weight: 600; color: var(--text-2); }
-    .readme-toggle { font-size: 0.75rem; color: var(--accent); }
-    .readme-body { padding: 20px 24px; display: none; flex-direction: column; gap: 18px; }
-    .readme-body.open { display: flex; }
-    .readme-section h3 { font-size: 0.875rem; font-weight: 600; color: var(--text-primary); margin-bottom: 8px; }
-    .readme-section p { font-size: 0.85rem; line-height: 1.7; color: var(--text-2); }
-    .readme-section a { color: var(--accent); text-decoration: none; }
-    .readme-section a:hover { text-decoration: underline; }
-    .readme-section ul { padding-left: 18px; display: flex; flex-direction: column; gap: 5px; }
-    .readme-section ul li { font-size: 0.85rem; line-height: 1.6; color: var(--text-2); }
-    .readme-divider { border: none; border-top: 1px solid var(--border); }
-
-    @media (max-width: 540px) {
-      .layout { padding: 32px 16px 60px; gap: 20px; }
-      .hero-title { font-size: 1.8rem; }
-      .pred-row { grid-template-columns: 1fr; }
-      .pred-right { flex-direction: row; align-items: center; justify-content: flex-start; }
-      .prob-bar-wrap { width: 60px; }
-      .input-footer { flex-direction: column; align-items: flex-start; }
-      .btn-predict { width: 100%; justify-content: center; }
-      .filter-input { width: 130px; }
+    .suppressed-toggle:hover {
+      background: var(--surface-2);
+      color: var(--text-secondary);
     }
+
+    .suppressed-toggle .toggle-icon {
+      font-size: 0.7rem;
+      transition: transform 0.2s ease;
+    }
+
+    .suppressed-toggle[aria-expanded="true"] .toggle-icon {
+      transform: rotate(90deg);
+    }
+
+    .suppressed-tooltip {
+      margin-left: auto;
+      font-size: 0.7rem;
+      font-style: italic;
+      font-weight: 400;
+    }
+
+    .suppressed-list {
+      display: none;
+      flex-direction: column;
+      gap: 6px;
+      padding: 12px 16px;
+      background: var(--surface-2);
+    }
+
+    .suppressed-list.open {
+      display: flex;
+    }
+
+    .pred-row.suppressed {
+      opacity: 0.7;
+      border-style: dashed;
+    }
+
+    .suppressed-reason {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      font-style: italic;
+    }
+
+    /* Error card */
+    .result-card.error {
+      border-color: var(--low-border);
+    }
+
+    .result-card.error .result-header {
+      background: var(--low-bg);
+    }
+
+    .error-message {
+      padding: 16px 20px;
+      color: var(--low-text);
+      font-size: 0.85rem;
+    }
+
+    /* Pagination */
+    .pagination {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 16px 0;
+    }
+
+    .pagination.visible {
+      display: flex;
+    }
+
+    .page-btn {
+      padding: 8px 14px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--surface);
+      color: var(--text-secondary);
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .page-btn:hover:not(:disabled) {
+      background: var(--surface-2);
+      border-color: var(--border-strong);
+    }
+
+    .page-btn.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: white;
+    }
+
+    .page-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .page-info {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin: 0 8px;
+    }
+
+    /* History panel in sidebar */
+    .history-section {
+      margin-top: auto;
+    }
+
+    .history-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 12px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .history-item:hover {
+      background: var(--surface);
+    }
+
+    .history-item-name {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      font-family: 'JetBrains Mono', monospace;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 140px;
+    }
+
+    .history-item-time {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+    }
+
+    .history-empty {
+      padding: 12px;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.8rem;
+    }
+
+    /* Mobile sidebar toggle */
+    .mobile-menu-btn {
+      display: none;
+    }
+
+    /* Charts section */
+    .confidence-chart {
+      display: flex;
+      align-items: flex-end;
+      gap: 4px;
+      height: 60px;
+      padding: 12px 20px;
+      border-top: 1px solid var(--border);
+    }
+
+    .chart-bar {
+      flex: 1;
+      max-width: 24px;
+      border-radius: 3px 3px 0 0;
+      transition: height 0.3s ease;
+    }
+
+    .chart-bar.high { background: var(--high-bar); }
+    .chart-bar.med { background: var(--med-bar); }
+    .chart-bar.low { background: var(--low-bar); }
+
+    /* Responsive */
+    @media (max-width: 1024px) {
+      .sidebar {
+        transform: translateX(-100%);
+      }
+
+      .sidebar.open {
+        transform: translateX(0);
+      }
+
+      .main-content {
+        margin-left: 0;
+      }
+
+      .mobile-menu-btn {
+        display: flex;
+      }
+
+      .page-content {
+        padding: 20px;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .topbar {
+        padding: 12px 16px;
+      }
+
+      .result-header {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .pred-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+      }
+
+      .pred-right {
+        width: 100%;
+        justify-content: space-between;
+      }
+
+      .filter-input {
+        width: 100%;
+      }
+
+      .toolbar-left,
+      .toolbar-right {
+        width: 100%;
+      }
+    }
+
+    /* Overlay for mobile */
+    .sidebar-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 99;
+    }
+
+    .sidebar-overlay.visible {
+      display: block;
+    }
+
+    /* Animation shake */
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-5px); }
+      40%, 80% { transform: translateX(5px); }
+    }
+
+    .shake {
+      animation: shake 0.35s ease;
+    }
+
+    /* Sun/Moon icons */
+    .icon-sun { display: none; }
+    .icon-moon { display: block; }
+    html.light .icon-sun { display: block; }
+    html.light .icon-moon { display: none; }
   </style>
 </head>
 <body>
-
-  <div class="bg-mesh" aria-hidden="true">
-    <div class="mesh-blob blob-1"></div>
-    <div class="mesh-blob blob-2"></div>
-    <div class="mesh-blob blob-3"></div>
-  </div>
-
-  <div class="layout">
-
-    <header class="header">
-      <div class="logo">
-        <svg class="logo-icon" viewBox="0 0 28 28" fill="none">
-          <circle cx="14" cy="14" r="13" stroke="currentColor" stroke-width="1.5"/>
-          <path d="M7 14 C7 9.5 10.5 7 14 7 C17.5 7 21 9.5 21 14 C21 18.5 17.5 21 14 21" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-          <circle cx="14" cy="14" r="2.5" fill="currentColor"/>
-          <path d="M14 11.5 L14 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-          <path d="M16.5 14 L21 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-        </svg>
-        <span class="logo-text">ProtFunc</span>
+  <div class="app-layout">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <a href="#" class="logo">
+          <div class="logo-icon">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M8 12 C8 8 10 6 12 6 C14 6 16 8 16 12 C16 16 14 18 12 18"/>
+              <circle cx="12" cy="12" r="2" fill="currentColor"/>
+            </svg>
+          </div>
+          <span class="logo-text">ProtFunc</span>
+          <span class="logo-badge">v2</span>
+        </a>
       </div>
-      <div class="header-right">
-        <span class="badge">ESM-2 · GO:MF</span>
-        <span class="badge">Beta</span>
-        <button class="icon-btn" id="themeBtn" title="Toggle dark mode" onclick="toggleTheme()">
-          <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-          <svg class="icon-sun"  viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-        </button>
-      </div>
-    </header>
 
-    <section class="hero">
-      <h1 class="hero-title">Molecular Function<br/>Prediction</h1>
-      <p class="hero-sub">Paste one or multiple amino acid sequences (plain or FASTA) to predict Gene Ontology molecular functions using ESM-2 embeddings.</p>
-    </section>
-
-    <div class="card input-card">
-      <div class="card-label">
-        <span>Amino Acid Sequence</span>
-        <span class="char-count" id="charCount">0 aa</span>
-      </div>
-      <div class="demo-bar">
-        <span class="demo-label">Try</span>
-        <button class="demo-btn" onclick="loadDemo('hippo')">Hippo Kinase</button>
-        <button class="demo-btn" onclick="loadDemo('opsin')">Opsin Rh6</button>
-      </div>
-      <textarea id="sequenceInput" class="seq-textarea"
-        placeholder=">MyProtein&#10;MKTIIALSYIFCLVFA..."
-        spellcheck="false" autocomplete="off"></textarea>
-      <div class="input-footer">
-        <div class="input-hints">
-          <span class="hint-tag">FASTA</span>
-          <span class="hint-tag">Plain AA</span>
-          <span class="hint-tag">Multi-sequence</span>
+      <nav class="sidebar-nav">
+        <div class="nav-section">
+          <div class="nav-section-title">Predict</div>
+          <button class="nav-item active" data-view="predict">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+            Single Prediction
+          </button>
+          <button class="nav-item" data-view="batch">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            Batch Upload
+          </button>
         </div>
-        <button class="btn-predict" id="predictBtn" onclick="predict()">
-          <span class="btn-label">Predict Functions</span>
-          <span class="btn-icon">→</span>
-        </button>
-      </div>
-    </div>
 
-    <div id="status" class="status hidden"></div>
+        <div class="nav-section">
+          <div class="nav-section-title">Info</div>
+          <button class="nav-item" data-view="about">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            About
+          </button>
+          <a class="nav-item" href="https://www.uniprot.org" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            UniProt Database
+          </a>
+        </div>
 
-    <div id="resultsToolbar" class="results-toolbar" style="display:none">
-      <div class="toolbar-left">
-        <input class="filter-input" id="termFilter" placeholder="Filter by term name…" oninput="applyFilters()" />
-        <button class="toggle-med-btn" id="toggleMedBtn" onclick="toggleMed()">Hide Medium</button>
-        <button class="toggle-low-btn" id="toggleLowBtn" onclick="toggleLow()">Show Low</button>
-      </div>
-      <div class="toolbar-right">
-        <button class="dl-btn" onclick="downloadTSV()">↓ TSV</button>
-        <span class="dl-sep">·</span>
-        <button class="dl-btn" onclick="downloadFASTA()">↓ FASTA</button>
-      </div>
-    </div>
+        <div class="nav-section history-section">
+          <div class="nav-section-title">Recent</div>
+          <div id="historyList"></div>
+        </div>
+      </nav>
 
-    <div id="results" class="results-area"></div>
-    <div id="pagination" class="pagination" style="display:none"></div>
-
-    <div class="history-panel" id="historyPanel">
-      <div class="history-header" onclick="toggleHistory()">
-        <span class="history-title">Recent Predictions</span>
-        <span class="history-meta" id="historyMeta">0 / 30</span>
-        <span class="history-toggle" id="historyToggle">▾ Show</span>
-      </div>
-      <div id="historyList" style="display:none"></div>
-    </div>
-
-    <div class="readme-panel">
-      <div class="readme-header" onclick="toggleReadme()">
-        <span class="readme-title">About & How to Use</span>
-        <span class="readme-toggle" id="readmeToggle">▾ Show</span>
-      </div>
-      <div class="readme-body" id="readmeBody">
-        <div class="readme-section">
-          <h3>What is ProtFunc?</h3>
-          <p>ProtFunc predicts Gene Ontology Molecular Function (GO:MF) terms for protein sequences. It uses <strong>ESM-2</strong> (Evolutionary Scale Modeling), a protein language model trained on hundreds of millions of sequences, to generate per-residue embeddings that are then passed through a trained classifier to predict which molecular functions a protein is likely to perform.</p>
-        </div>
-        <hr class="readme-divider"/>
-        <div class="readme-section">
-          <h3>What is ESM-2?</h3>
-          <p>ESM-2 is a transformer-based protein language model developed by Meta AI. It learns evolutionary and structural patterns from amino acid sequences without needing structure data, producing rich 320-dimensional embeddings per residue. ProtFunc uses the ESM-2 8M parameter variant (esm2_t6_8M_UR50D) for efficiency. Mean-pooling across residues gives a single protein-level embedding which feeds the classifier.</p>
-        </div>
-        <hr class="readme-divider"/>
-        <div class="readme-section">
-          <h3>How to Use</h3>
-          <ul>
-            <li>Paste one or more sequences in plain amino acid format or FASTA format (starting with <code>&gt;Name</code>).</li>
-            <li>Multiple sequences can be submitted at once — separate each with a FASTA header line.</li>
-            <li>The model accepts sequences up to 2500 amino acids. Longer sequences will be rejected.</li>
-            <li>Click <strong>Predict Functions</strong> or press <strong>⌘ + Enter</strong>.</li>
-            <li>Results are sorted by confidence. High confidence (≥75%) predictions are most reliable.</li>
-          </ul>
-        </div>
-        <hr class="readme-divider"/>
-        <div class="readme-section">
-          <h3>Finding Sequences</h3>
-          <p><a href="https://www.uniprot.org" target="_blank" rel="noopener">UniProt</a> is the best source for protein sequences. Search by protein name or gene name, click an entry, and copy the sequence from the entry page. You can also download in FASTA format directly. For insect proteins specifically, filtering by taxonomy in UniProt gives the most relevant results for this model, which was trained on insect data.</p>
-        </div>
-        <hr class="readme-divider"/>
-        <div class="readme-section">
-          <h3>Understanding GO Terms</h3>
-          <p>Each prediction shows a GO term ID (e.g. GO:0004672) and its name. Clicking the GO ID opens <a href="https://amigo.geneontology.org" target="_blank" rel="noopener">AmiGO</a>, the Gene Ontology browser, where you can explore the term's definition, its place in the GO hierarchy, and which proteins are annotated with it.</p>
-        </div>
-        <hr class="readme-divider"/>
-        <div class="readme-section">
-          <h3>Confidence Levels</h3>
-          <ul>
-            <li><strong>High (≥75%)</strong> — strong prediction, consistent with the training distribution.</li>
-            <li><strong>Medium (55–75%)</strong> — moderate confidence, hidden by default to reduce noise. Toggle with the toolbar button.</li>
-            <li><strong>Low (&lt;55%)</strong> — uncertain, hidden by default. Use cautiously as supplementary signal only.</li>
-          </ul>
-        </div>
-        <hr class="readme-divider"/>
-        <div class="readme-section">
-          <h3>Filters & Downloads</h3>
-          <p>Use the toolbar above results to filter predictions by term name, show or hide medium and low confidence results, and download results as TSV (spreadsheet-compatible) or FASTA (sequence + annotation). The prediction history panel stores your last 30 runs for quick re-access.</p>
-        </div>
-        <hr class="readme-divider"/>
-        <div class="readme-section">
-          <h3>Limitations</h3>
-          <ul>
-            <li>The model was trained primarily on insect proteins — predictions for distantly related organisms may be less accurate.</li>
-            <li>Only Molecular Function GO terms are predicted. Biological Process and Cellular Component annotations are not included.</li>
-            <li>Predictions reflect patterns in training data and are not a substitute for experimental annotation.</li>
-          </ul>
+      <div class="sidebar-footer">
+        <div class="model-badge" style="width: 100%; justify-content: center;">
+          <span class="dot"></span>
+          ESM-2 8M + GO:MF
         </div>
       </div>
-    </div>
+    </aside>
 
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+    <!-- Main content -->
+    <main class="main-content">
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="icon-btn mobile-menu-btn" onclick="toggleSidebar()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+          </button>
+          <h1 class="page-title" id="pageTitle">Molecular Function Prediction</h1>
+        </div>
+        <div class="topbar-right">
+          <div class="model-badge">
+            <span class="dot"></span>
+            Model Ready
+          </div>
+          <button class="icon-btn" onclick="toggleTheme()" title="Toggle theme">
+            <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+            <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+          </button>
+        </div>
+      </header>
+
+      <div class="page-content">
+        <!-- Predict View -->
+        <div id="predictView">
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">Input Sequence</span>
+              <span class="char-count" id="charCount">0 aa</span>
+            </div>
+            <div class="card-body">
+              <div class="demo-bar">
+                <span class="demo-label">Try example:</span>
+                <button class="demo-btn" onclick="loadDemo('hippo')">Hippo Kinase</button>
+                <button class="demo-btn" onclick="loadDemo('opsin')">Opsin Rh6</button>
+                <button class="demo-btn" onclick="loadDemo('human')">Human P53</button>
+              </div>
+
+              <div class="textarea-wrapper">
+                <textarea id="sequenceInput" class="seq-textarea"
+                  placeholder=">MyProtein&#10;MKTIIALSYIFCLVFA..."
+                  spellcheck="false" autocomplete="off"></textarea>
+              </div>
+
+              <div class="action-bar">
+                <div class="input-hints">
+                  <span class="hint-tag">FASTA</span>
+                  <span class="hint-tag">Plain AA</span>
+                  <span class="hint-tag">Multi-sequence</span>
+                </div>
+                <button class="btn-primary" id="predictBtn" onclick="predict()">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                  Predict Functions
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div id="status" class="status-bar"></div>
+
+          <div id="resultsToolbar" class="results-toolbar">
+            <div class="toolbar-left">
+              <input class="filter-input" id="termFilter" placeholder="Filter by GO term..." oninput="applyFilters()" />
+              <button class="filter-btn" id="toggleMedBtn" onclick="toggleMed()">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+                Hide Medium
+              </button>
+              <button class="filter-btn" id="toggleLowBtn" onclick="toggleLow()">Show Low</button>
+            </div>
+            <div class="toolbar-right">
+              <button class="export-btn" onclick="downloadTSV()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                TSV
+              </button>
+              <button class="export-btn" onclick="downloadJSON()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                JSON
+              </button>
+            </div>
+          </div>
+
+          <div id="results" class="results-area"></div>
+          <div id="pagination" class="pagination"></div>
+        </div>
+
+        <!-- Batch View -->
+        <div id="batchView" style="display: none;">
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">Batch Upload</span>
+            </div>
+            <div class="card-body">
+              <p style="color: var(--text-secondary); margin-bottom: 16px; font-size: 0.9rem;">
+                Upload a FASTA file with multiple sequences for batch prediction. Maximum 100 sequences per batch.
+              </p>
+              <div class="batch-upload" id="dropZone" onclick="document.getElementById('fileInput').click()">
+                <svg class="batch-upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="17 8 12 3 7 8"/>
+                  <line x1="12" y1="3" x2="12" y2="15"/>
+                </svg>
+                <div class="batch-upload-text">Drop FASTA file here or click to upload</div>
+                <div class="batch-upload-hint">.fasta, .fa, .txt files supported</div>
+              </div>
+              <input type="file" id="fileInput" accept=".fasta,.fa,.txt" onchange="handleFileUpload(event)" />
+
+              <div id="batchStatus" class="status-bar" style="margin-top: 20px;"></div>
+              <div id="batchResults" class="results-area" style="margin-top: 20px;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- About View -->
+        <div id="aboutView" style="display: none;">
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">About ProtFunc</span>
+            </div>
+            <div class="card-body" style="line-height: 1.8; color: var(--text-secondary);">
+              <h3 style="color: var(--text-primary); margin-bottom: 12px; font-size: 1rem;">What is ProtFunc?</h3>
+              <p style="margin-bottom: 20px;">
+                ProtFunc predicts Gene Ontology Molecular Function (GO:MF) terms for protein sequences. It uses <strong style="color: var(--text-primary);">ESM-2</strong>, a protein language model trained on hundreds of millions of sequences, to generate embeddings that are passed through a trained classifier with attention pooling.
+              </p>
+
+              <h3 style="color: var(--text-primary); margin-bottom: 12px; font-size: 1rem;">How to Use</h3>
+              <ul style="padding-left: 20px; margin-bottom: 20px;">
+                <li>Paste sequences in plain amino acid or FASTA format</li>
+                <li>Multiple sequences can be submitted at once</li>
+                <li>Maximum sequence length: 2500 amino acids</li>
+                <li>Click <strong>Predict Functions</strong> or press <strong>Cmd/Ctrl + Enter</strong></li>
+              </ul>
+
+              <h3 style="color: var(--text-primary); margin-bottom: 12px; font-size: 1rem;">Confidence Levels</h3>
+              <ul style="padding-left: 20px; margin-bottom: 20px;">
+                <li><span style="color: var(--high-text);">High (75%+)</span> - Strong prediction, reliable</li>
+                <li><span style="color: var(--med-text);">Medium (55-75%)</span> - Moderate confidence, hidden by default</li>
+                <li><span style="color: var(--low-text);">Low (&lt;55%)</span> - Uncertain, use as supplementary signal only</li>
+              </ul>
+
+              <h3 style="color: var(--text-primary); margin-bottom: 12px; font-size: 1rem;">Model Information</h3>
+              <p>
+                The enhanced model uses ESM-2 (8M parameters) for embeddings with a ResidualMLP classifier featuring attention pooling. This version supports predictions across all Metazoa (animal) proteins, not just insects.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
   </div>
 
   <script>
+    // ── State ─────────────────────────────────────────────────────────────────
     const ta = document.getElementById('sequenceInput');
     const cc = document.getElementById('charCount');
+    let allResults = [];
+    let showMed = true;
+    let showLow = false;
+    let currentPage = 1;
+    const PAGE_SIZE = 10;
 
     // ── Theme ─────────────────────────────────────────────────────────────────
-    function applyTheme(dark) {
-      document.documentElement.classList.toggle('dark', dark);
-      localStorage.setItem('theme', dark ? 'dark' : 'light');
+    function applyTheme(light) {
+      document.documentElement.classList.toggle('light', light);
+      localStorage.setItem('theme', light ? 'light' : 'dark');
     }
-    function toggleTheme() { applyTheme(!document.documentElement.classList.contains('dark')); }
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme) applyTheme(savedTheme === 'dark');
-    else applyTheme(window.matchMedia('(prefers-color-scheme: dark)').matches);
 
-    // ── Char counter — strips full FASTA header lines before counting ─────────
+    function toggleTheme() {
+      applyTheme(!document.documentElement.classList.contains('light'));
+    }
+
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme) applyTheme(savedTheme === 'light');
+    else applyTheme(window.matchMedia('(prefers-color-scheme: light)').matches);
+
+    // ── Sidebar ───────────────────────────────────────────────────────────────
+    function toggleSidebar() {
+      document.getElementById('sidebar').classList.toggle('open');
+      document.getElementById('sidebarOverlay').classList.toggle('visible');
+    }
+
+    // ── View Navigation ───────────────────────────────────────────────────────
+    const views = {
+      predict: { el: 'predictView', title: 'Molecular Function Prediction' },
+      batch: { el: 'batchView', title: 'Batch Upload' },
+      about: { el: 'aboutView', title: 'About ProtFunc' }
+    };
+
+    document.querySelectorAll('.nav-item[data-view]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const view = btn.dataset.view;
+        if (!views[view]) return;
+
+        // Update active nav
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        btn.classList.add('active');
+
+        // Show view
+        Object.keys(views).forEach(v => {
+          document.getElementById(views[v].el).style.display = v === view ? 'block' : 'none';
+        });
+
+        // Update title
+        document.getElementById('pageTitle').textContent = views[view].title;
+
+        // Close mobile sidebar
+        if (window.innerWidth <= 1024) toggleSidebar();
+      });
+    });
+
+    // ── Char Counter ──────────────────────────────────────────────────────────
     ta.addEventListener('input', () => {
       const seq = ta.value.split('\n').filter(l => !l.trimStart().startsWith('>')).join('').replace(/[^A-Za-z]/g, '');
       cc.textContent = seq.length ? `${seq.length.toLocaleString()} aa` : '0 aa';
     });
-    ta.addEventListener('keydown', e => { if (e.key === 'Enter' && e.metaKey) predict(); });
+    ta.addEventListener('keydown', e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) predict(); });
 
     // ── Helpers ───────────────────────────────────────────────────────────────
-    // confClass and confLabel use matching thresholds (0.75 / 0.55)
     function confClass(p) { return p >= 0.75 ? 'conf-high' : p >= 0.55 ? 'conf-med' : 'conf-low'; }
-    function confLabel(p) { return p >= 0.75 ? 'High'      : p >= 0.55 ? 'Medium'   : 'Low'; }
-    function probBar(p) {
-      return `<div class="prob-bar-wrap"><div class="prob-bar-fill ${confClass(p)}" style="width:${Math.round(p*100)}%"></div></div>`;
-    }
-    function escHtml(s) {
-      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-    }
+    function confLabel(p) { return p >= 0.75 ? 'High' : p >= 0.55 ? 'Medium' : 'Low'; }
+    function confBarClass(p) { return p >= 0.75 ? 'high' : p >= 0.55 ? 'med' : 'low'; }
+    function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
     // ── Validation ────────────────────────────────────────────────────────────
-    const MIN_SEQ_LENGTH    = 30;
-    const MIN_ENTROPY_BITS  = 2.5;
+    const MIN_SEQ_LENGTH = 30;
+    const MIN_ENTROPY_BITS = 2.5;
     const MAX_DOMINANT_FRAC = 0.60;
-    const MIN_DISTINCT_AA   = 5;
-    const INVALID_AA_RE     = /[BJOUXZ]/gi;
+    const MIN_DISTINCT_AA = 5;
+    const INVALID_AA_RE = /[BJOUXZ]/gi;
 
     function sequenceEntropy(seq) {
-      const upper  = seq.toUpperCase();
+      const upper = seq.toUpperCase();
       const counts = {};
       for (const aa of upper) counts[aa] = (counts[aa] || 0) + 1;
       const n = upper.length;
@@ -446,7 +1428,7 @@
 
     function parseSequences(raw) {
       const lines = raw.split('\n');
-      const seqs  = [];
+      const seqs = [];
       let current = null;
       for (const line of lines) {
         const trimmed = line.trim();
@@ -466,109 +1448,99 @@
       const errors = [];
       for (const seq of seqs) {
         const label = `"${escHtml(seq.name)}"`;
-        const res   = seq.residues;
+        const res = seq.residues;
 
         if (res.length === 0) { errors.push(`${label}: sequence is empty.`); continue; }
-
         if (res.length < MIN_SEQ_LENGTH) {
-          errors.push(`${label}: too short (${res.length} aa — minimum ${MIN_SEQ_LENGTH} aa). Sequences this short are unlikely to fold into a stable domain.`);
+          errors.push(`${label}: too short (${res.length} aa, minimum ${MIN_SEQ_LENGTH}).`);
           continue;
         }
 
         const badChars = [...new Set((res.match(INVALID_AA_RE) || []).map(c => c.toUpperCase()))];
         if (badChars.length > 0) {
-          errors.push(`${label}: contains invalid amino acid character(s): ${badChars.join(', ')}. Ambiguity codes are not accepted.`);
+          errors.push(`${label}: invalid characters: ${badChars.join(', ')}.`);
         }
 
-        const upper  = res.toUpperCase();
+        const upper = res.toUpperCase();
         const counts = {};
         for (const aa of upper) counts[aa] = (counts[aa] || 0) + 1;
 
         if (Object.keys(counts).length < MIN_DISTINCT_AA) {
-          errors.push(`${label}: only ${Object.keys(counts).length} distinct residue type(s). Real proteins require at least ${MIN_DISTINCT_AA}.`);
+          errors.push(`${label}: only ${Object.keys(counts).length} distinct residues (minimum ${MIN_DISTINCT_AA}).`);
           continue;
         }
 
         const maxCount = Math.max(...Object.values(counts));
-        const domFrac  = maxCount / res.length;
+        const domFrac = maxCount / res.length;
         if (domFrac > MAX_DOMINANT_FRAC) {
-          const domAA = Object.keys(counts).find(k => counts[k] === maxCount);
-          errors.push(`${label}: dominated by a single residue (${domAA} = ${Math.round(domFrac * 100)}%). Low-complexity sequences produce unreliable embeddings.`);
+          errors.push(`${label}: low complexity (${Math.round(domFrac * 100)}% single residue).`);
           continue;
         }
 
         const H = sequenceEntropy(res);
         if (H < MIN_ENTROPY_BITS) {
-          errors.push(`${label}: very low sequence complexity (Shannon entropy ${H.toFixed(2)} bits — minimum ${MIN_ENTROPY_BITS} bits). Repetitive or artificially constructed sequences are not accepted.`);
+          errors.push(`${label}: low entropy (${H.toFixed(2)} bits).`);
         }
       }
       return errors;
     }
-
-    // ── State ─────────────────────────────────────────────────────────────────
-    let allResults  = [];
-    let showMed     = true;
-    let showLow     = false;
-    let currentPage = 1;
-    const PAGE_SIZE = 10;
 
     // ── Predict ───────────────────────────────────────────────────────────────
     async function predict() {
       const raw = ta.value.trim();
       if (!raw) { shake(); return; }
 
-      const btn    = document.getElementById('predictBtn');
+      const btn = document.getElementById('predictBtn');
       const status = document.getElementById('status');
 
-      // Client-side validation
       const seqs = parseSequences(raw);
       if (seqs.length === 0) { shake(); return; }
 
       const validationErrors = validateSequences(seqs);
       if (validationErrors.length > 0) {
-        status.className  = 'status visible';
-        status.innerHTML  = `<span class="err-msg">⚠ ${validationErrors.join('<br>⚠ ')}</span>`;
+        status.className = 'status-bar visible';
+        status.innerHTML = `<span class="status-error">${validationErrors.join('<br>')}</span>`;
         document.getElementById('results').innerHTML = '';
         shake();
         return;
       }
 
       btn.disabled = true;
-      btn.querySelector('.btn-label').textContent = 'Running…';
-      status.className = 'status visible';
-      status.innerHTML = '<div class="spinner"></div><span>Running ESM-2 embeddings…</span>';
+      btn.innerHTML = '<div class="spinner"></div>Running...';
+      status.className = 'status-bar visible';
+      status.innerHTML = '<div class="spinner"></div><span class="status-text">Running ESM-2 embeddings...</span>';
       document.getElementById('results').innerHTML = '';
-      document.getElementById('pagination').style.display = 'none';
-      document.getElementById('resultsToolbar').style.display = 'none';
+      document.getElementById('pagination').className = 'pagination';
+      document.getElementById('resultsToolbar').className = 'results-toolbar';
 
       try {
-        const res  = await fetch('/predict', {
+        const res = await fetch('/predict', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ sequence: raw }),
         });
         if (!res.ok) throw new Error(`Server error ${res.status}`);
         const data = await res.json();
-        status.className = 'status hidden';
-        allResults  = data.results || [];
+        status.className = 'status-bar';
+        allResults = data.results || [];
         currentPage = 1;
         renderPage();
         if (allResults.length > 0) {
-          document.getElementById('resultsToolbar').style.display = 'flex';
+          document.getElementById('resultsToolbar').className = 'results-toolbar visible';
           addToHistory(allResults, raw);
         }
       } catch(e) {
-        status.className = 'status visible';
-        status.innerHTML = `<span class="err-msg">⚠ ${escHtml(e.message)}</span>`;
+        status.className = 'status-bar visible';
+        status.innerHTML = `<span class="status-error">${escHtml(e.message)}</span>`;
       } finally {
         btn.disabled = false;
-        btn.querySelector('.btn-label').textContent = 'Predict Functions';
+        btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>Predict Functions`;
       }
     }
 
     // ── Pagination ────────────────────────────────────────────────────────────
     function renderPage() {
-      const start    = (currentPage - 1) * PAGE_SIZE;
+      const start = (currentPage - 1) * PAGE_SIZE;
       const pageData = allResults.slice(start, start + PAGE_SIZE);
       renderResults(pageData, start);
       renderPagination();
@@ -576,15 +1548,15 @@
 
     function renderPagination() {
       const total = Math.ceil(allResults.length / PAGE_SIZE);
-      const pag   = document.getElementById('pagination');
-      if (total <= 1) { pag.style.display = 'none'; return; }
-      pag.style.display = 'flex';
-      let html = `<button class="page-btn" onclick="goPage(${currentPage-1})" ${currentPage===1?'disabled':''}>‹ Prev</button>`;
+      const pag = document.getElementById('pagination');
+      if (total <= 1) { pag.className = 'pagination'; return; }
+      pag.className = 'pagination visible';
+      let html = `<button class="page-btn" onclick="goPage(${currentPage-1})" ${currentPage===1?'disabled':''}>Prev</button>`;
       for (let i = 1; i <= total; i++) {
         html += `<button class="page-btn ${i===currentPage?'active':''}" onclick="goPage(${i})">${i}</button>`;
       }
-      html += `<button class="page-btn" onclick="goPage(${currentPage+1})" ${currentPage===total?'disabled':''}>Next ›</button>`;
-      html += `<span class="page-info">${allResults.length} sequences · page ${currentPage}/${total}</span>`;
+      html += `<button class="page-btn" onclick="goPage(${currentPage+1})" ${currentPage===total?'disabled':''}>Next</button>`;
+      html += `<span class="page-info">${allResults.length} sequences</span>`;
       pag.innerHTML = html;
     }
 
@@ -593,23 +1565,25 @@
       if (p < 1 || p > total) return;
       currentPage = p;
       renderPage();
-      window.scrollTo({ top: document.getElementById('results').offsetTop - 20, behavior: 'smooth' });
+      window.scrollTo({ top: document.getElementById('results').offsetTop - 80, behavior: 'smooth' });
     }
 
-    // ── Render results ────────────────────────────────────────────────────────
-    function predRowHTML(p, extraClass) {
-      extraClass = extraClass || '';
+    // ── Render Results ────────────────────────────────────────────────────────
+    function predRowHTML(p, extraClass = '') {
       const cc2 = confClass(p.prob);
+      const barClass = confBarClass(p.prob);
       return `<div class="pred-row ${cc2} ${extraClass}" data-name="${escHtml((p.name||'').toLowerCase())}" data-goid="${escHtml(p.go_id||'')}">
         <div class="pred-main">
           <span class="pred-name">${escHtml(p.name)}</span>
           <span class="pred-goid"><a href="https://amigo.geneontology.org/amigo/term/${p.go_id}" target="_blank" rel="noopener">${escHtml(p.go_id)}</a></span>
-          ${extraClass === 'suppressed' ? '<span class="suppressed-reason">Parent term not predicted above threshold</span>' : ''}
+          ${extraClass === 'suppressed' ? '<span class="suppressed-reason">Parent term not predicted</span>' : ''}
         </div>
         <div class="pred-right">
-          <span class="pred-conf-label">${confLabel(p.prob)}</span>
-          <span class="pred-prob">${(p.prob*100).toFixed(1)}%</span>
-          ${probBar(p.prob)}
+          <div class="pred-conf">
+            <span class="pred-conf-label">${confLabel(p.prob)}</span>
+            <span class="pred-prob">${(p.prob*100).toFixed(1)}%</span>
+          </div>
+          <div class="prob-bar"><div class="prob-bar-fill ${barClass}" style="width:${Math.round(p.prob*100)}%"></div></div>
         </div>
       </div>`;
     }
@@ -617,70 +1591,64 @@
     function renderResults(results, offset) {
       const container = document.getElementById('results');
       if (!results || results.length === 0) {
-        container.innerHTML = '<p class="empty-state">No results returned.</p>';
+        container.innerHTML = '<p class="no-preds">No results returned.</p>';
         return;
       }
+
       container.innerHTML = results.map((r, idx) => {
         const globalIdx = (offset || 0) + idx;
         if (r.error) {
-          return `<div class="result-card error-card">
+          return `<div class="result-card error">
             <div class="result-header">
               <div class="result-header-left">
                 <span class="seq-name">${escHtml(r.name || `Sequence ${globalIdx+1}`)}</span>
               </div>
-              <span class="seq-error">${escHtml(r.error)}</span>
             </div>
+            <div class="error-message">${escHtml(r.error)}</div>
           </div>`;
         }
 
-        const preds      = r.predictions  || [];
-        const suppressed = r.suppressed   || [];
-        const seqName    = r.name || `Sequence ${globalIdx+1}`;
-        const highCount  = preds.filter(p => p.prob >= 0.75).length;
-        const medCount   = preds.filter(p => p.prob >= 0.55 && p.prob < 0.75).length;
-        const lowCount   = preds.filter(p => p.prob < 0.55).length;
+        const preds = r.predictions || [];
+        const suppressed = r.suppressed || [];
+        const seqName = r.name || `Sequence ${globalIdx+1}`;
+        const highCount = preds.filter(p => p.prob >= 0.75).length;
+        const medCount = preds.filter(p => p.prob >= 0.55 && p.prob < 0.75).length;
+        const lowCount = preds.filter(p => p.prob < 0.55).length;
 
         const predHTML = preds.length === 0
-          ? '<p class="no-preds">No functions predicted above confidence threshold.</p>'
+          ? '<p class="no-preds">No functions predicted above threshold.</p>'
           : preds.map(p => {
-              const cc2      = confClass(p.prob);
-              const isMed    = cc2 === 'conf-med';
-              const isLow    = cc2 === 'conf-low';
-              const hiddenCl = (isMed && !showMed) ? ' hidden-med' : (isLow && !showLow) ? ' hidden-low' : '';
-              return predRowHTML(p, hiddenCl.trim());
+              const cc2 = confClass(p.prob);
+              const isMed = cc2 === 'conf-med';
+              const isLow = cc2 === 'conf-low';
+              const hiddenCl = (isMed && !showMed) ? 'hidden-med' : (isLow && !showLow) ? 'hidden-low' : '';
+              return predRowHTML(p, hiddenCl);
             }).join('');
-
-        const medCollapseRow = medCount > 0
-          ? `<div class="med-collapsed-row ${!showMed ? 'show' : ''}" id="medrow-${globalIdx}">
-               <button class="show-med-inline" onclick="toggleMed()">Show ${medCount} medium confidence result${medCount>1?'s':''}</button>
-             </div>`
-          : '';
 
         const suppressedHTML = suppressed.length === 0 ? '' : `
           <button class="suppressed-toggle" aria-expanded="false" onclick="toggleSuppressed(this)">
-            <span class="toggle-icon">▶</span>
-            ${suppressed.length} potential function${suppressed.length > 1 ? 's' : ''} hidden
-            <span class="suppressed-tooltip">parent term not predicted — click to inspect</span>
+            <span class="toggle-icon">&#9654;</span>
+            ${suppressed.length} suppressed prediction${suppressed.length > 1 ? 's' : ''}
+            <span class="suppressed-tooltip">parent not predicted</span>
           </button>
           <div class="suppressed-list">
             ${suppressed.map(p => predRowHTML(p, 'suppressed')).join('')}
           </div>`;
 
         return `
-          <div class="result-card" style="animation-delay:${idx*60}ms" data-idx="${globalIdx}">
+          <div class="result-card" style="animation-delay:${idx*60}ms">
             <div class="result-header">
               <div class="result-header-left">
                 <span class="seq-name">${escHtml(seqName)}</span>
-                <span class="seq-len-pill">${r.sequence_length || '?'} aa</span>
+                <span class="seq-len">${r.sequence_length || '?'} aa</span>
               </div>
               <div class="result-stats">
-                <span class="stat-chip">${highCount} high</span>
-                ${medCount ? `<span class="stat-chip" style="color:var(--med-text);background:var(--med-bg)">${medCount} med</span>` : ''}
-                ${lowCount ? `<span class="stat-chip muted">${lowCount} low</span>` : ''}
-                ${suppressed.length ? `<span class="stat-chip muted">${suppressed.length} suppressed</span>` : ''}
+                ${highCount ? `<span class="stat-chip high">${highCount} high</span>` : ''}
+                ${medCount ? `<span class="stat-chip med">${medCount} med</span>` : ''}
+                ${lowCount ? `<span class="stat-chip low">${lowCount} low</span>` : ''}
               </div>
             </div>
-            <div class="pred-list">${predHTML}${medCollapseRow}</div>
+            <div class="pred-list">${predHTML}</div>
             ${suppressedHTML}
           </div>`;
       }).join('');
@@ -698,28 +1666,31 @@
     function applyFilters() {
       const query = (document.getElementById('termFilter').value || '').toLowerCase().trim();
       document.querySelectorAll('.pred-row').forEach(row => {
-        const name  = row.dataset.name || '';
-        const goid  = row.dataset.goid || '';
+        const name = row.dataset.name || '';
+        const goid = row.dataset.goid || '';
         const isMed = row.classList.contains('conf-med');
         const isLow = row.classList.contains('conf-low');
-        const hiddenByConf   = (isMed && !showMed) || (isLow && !showLow);
+        const hiddenByConf = (isMed && !showMed) || (isLow && !showLow);
         const hiddenByFilter = query && !name.includes(query) && !goid.includes(query);
-        row.classList.toggle('hidden-med',    isMed && !showMed);
-        row.classList.toggle('hidden-low',    isLow && !showLow);
-        row.classList.toggle('filtered-out',  !hiddenByConf && hiddenByFilter);
+        row.classList.toggle('hidden-med', isMed && !showMed);
+        row.classList.toggle('hidden-low', isLow && !showLow);
+        row.classList.toggle('filtered-out', !hiddenByConf && hiddenByFilter);
       });
     }
 
     function toggleMed() {
       showMed = !showMed;
-      document.getElementById('toggleMedBtn').textContent = showMed ? 'Hide Medium' : 'Show Medium';
-      document.querySelectorAll('.med-collapsed-row').forEach(r => r.classList.toggle('show', !showMed));
+      const btn = document.getElementById('toggleMedBtn');
+      btn.textContent = showMed ? 'Hide Medium' : 'Show Medium';
+      btn.classList.toggle('active', !showMed);
       applyFilters();
     }
 
     function toggleLow() {
       showLow = !showLow;
-      document.getElementById('toggleLowBtn').textContent = showLow ? 'Hide Low' : 'Show Low';
+      const btn = document.getElementById('toggleLowBtn');
+      btn.textContent = showLow ? 'Hide Low' : 'Show Low';
+      btn.classList.toggle('active', showLow);
       applyFilters();
     }
 
@@ -736,29 +1707,22 @@
       triggerDownload(rows.join('\n'), 'protfunc_results.tsv', 'text/tab-separated-values');
     }
 
-    function downloadFASTA() {
+    function downloadJSON() {
       if (!allResults.length) return;
-      const lines = [];
-      for (const r of allResults) {
-        if (r.error) continue;
-        const goList = (r.predictions || []).map(p => `${p.go_id}|${p.name}|${(p.prob*100).toFixed(1)}%`).join('; ');
-        lines.push(`>${r.name} [${r.sequence_length} aa] GO:MF=${goList}`);
-        lines.push('; sequence not included (submit FASTA input to preserve sequence)');
-      }
-      triggerDownload(lines.join('\n'), 'protfunc_results.fasta', 'text/plain');
+      triggerDownload(JSON.stringify(allResults, null, 2), 'protfunc_results.json', 'application/json');
     }
 
     function triggerDownload(content, filename, mime) {
       const blob = new Blob([content], { type: mime });
-      const url  = URL.createObjectURL(blob);
-      const a    = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
       a.href = url; a.download = filename; a.click();
       URL.revokeObjectURL(url);
     }
 
     // ── History ───────────────────────────────────────────────────────────────
     const HISTORY_KEY = 'protfunc_history';
-    const HISTORY_MAX = 30;
+    const HISTORY_MAX = 10;
 
     function loadHistory() {
       try { return JSON.parse(localStorage.getItem(HISTORY_KEY)) || []; }
@@ -768,69 +1732,49 @@
     function saveHistory(h) { localStorage.setItem(HISTORY_KEY, JSON.stringify(h.slice(0, HISTORY_MAX))); }
 
     function addToHistory(results, inputSeq) {
-      const h    = loadHistory();
+      const h = loadHistory();
       const name = results[0]?.name || 'Unknown';
-      const n    = results.length;
-      h.unshift({ name, n, ts: Date.now(), results, inputSeq });
+      h.unshift({ name, ts: Date.now(), results, inputSeq });
       saveHistory(h);
       renderHistory();
     }
 
     function renderHistory() {
-      const h    = loadHistory();
-      const meta = document.getElementById('historyMeta');
+      const h = loadHistory();
       const list = document.getElementById('historyList');
-      meta.textContent = `${h.length} / ${HISTORY_MAX}`;
       if (h.length === 0) {
-        list.innerHTML = '<div class="history-empty">No predictions yet.</div>';
+        list.innerHTML = '<div class="history-empty">No recent predictions</div>';
         return;
       }
-      list.innerHTML = `<div class="history-list">` +
-        h.map((entry, i) => {
-          const date  = new Date(entry.ts).toLocaleString(undefined, { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
-          const label = entry.n > 1 ? `${entry.name} +${entry.n-1} more` : entry.name;
-          return `<div class="history-item" onclick="restoreHistory(${i})">
-            <span class="history-item-name">${escHtml(label)}</span>
-            <span class="history-item-meta">${date}</span>
-          </div>`;
-        }).join('') +
-      `</div>`;
+      list.innerHTML = h.slice(0, 5).map((entry, i) => {
+        const time = new Date(entry.ts).toLocaleString(undefined, { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
+        return `<div class="history-item" onclick="restoreHistory(${i})">
+          <span class="history-item-name">${escHtml(entry.name)}</span>
+          <span class="history-item-time">${time}</span>
+        </div>`;
+      }).join('');
     }
 
     function restoreHistory(i) {
       const h = loadHistory();
       if (!h[i]) return;
-      allResults  = h[i].results;
+      allResults = h[i].results;
       currentPage = 1;
-      ta.value    = h[i].inputSeq || '';
-      const seq   = ta.value.split('\n').filter(l => !l.trimStart().startsWith('>')).join('').replace(/[^A-Za-z]/g, '');
+      ta.value = h[i].inputSeq || '';
+      const seq = ta.value.split('\n').filter(l => !l.trimStart().startsWith('>')).join('').replace(/[^A-Za-z]/g, '');
       cc.textContent = seq.length ? `${seq.length.toLocaleString()} aa` : '0 aa';
-      document.getElementById('resultsToolbar').style.display = 'flex';
+      document.getElementById('resultsToolbar').className = 'results-toolbar visible';
       renderPage();
-    }
-
-    function toggleHistory() {
-      const list   = document.getElementById('historyList');
-      const toggle = document.getElementById('historyToggle');
-      const vis    = list.style.display !== 'none';
-      list.style.display = vis ? 'none' : 'block';
-      toggle.textContent = vis ? '▾ Show' : '▴ Hide';
-    }
-
-    // ── README ────────────────────────────────────────────────────────────────
-    function toggleReadme() {
-      const body   = document.getElementById('readmeBody');
-      const toggle = document.getElementById('readmeToggle');
-      const open   = body.classList.toggle('open');
-      toggle.textContent = open ? '▴ Hide' : '▾ Show';
     }
 
     // ── Demo sequences ────────────────────────────────────────────────────────
     const DEMOS = {
       hippo: `>Drosophila_Hippo_kinase
-MSEPEVTSVVDMKSPNISSSCSFFKLKKLSEESLLQPPEKVFDIMYKLGEGSYGSVYKAVHKESSSIVAIKLVPVESDLHEIIKEISIMQQCDSPYVVRYYGSYFKQYDLWICMEYCGAGSVSDIMRLRKKTLTEDEIATILSDTLQGLVYLHLRRKIHRDIKAANILLNTEGYAKLADFGVAGQLTDTMAKRNTVIGTPFWMAPEVIEEIGYDCVADIWSLGITALEMAEGKPPYGEIHPMRAIFMIPQKPPPSFREPDRWSTEFIDFVSKCLVKEPDDRATATELLEHEFIRNAKHRSILKPMLEETCAIREQQRANRSFGGVLAASQAKSLATQENGMQQHITDNAFMEDPGTLVPEKFGEYQQSSASDATMIAHAEQGVDEGTLGPGGLRNLSKAAAPAAASSAASPLDMPAVDSGTMVELESNLGTMVINSDSDDSTTAKNNDDQKPRNRYRPQFLEHFDRKNAGDGRGDEKPIATEYSPAAAEQQQQQQQQQQQQQQDEQHLASGANDLNNWEHNMEMQFQQISAINQYGLQQHQQQQQVLMAYPLMNEQLIALNNQPNLLLSNAAPMGQQGIPAAAPAQPPPAYQNQHMHTQSHAYVEGEFEFLKFLTFDDLNQRLCNIDHEMELEIEQLNKKYNAKRQPIVDAMNAKRKRQQNINNNLIKI`,
+MSEPEVTSVVDMKSPNISSSCSFFKLKKLSEESLLQPPEKVFDIMYKLGEGSYGSVYKAVHKESSSIVAIKLVPVESDLHEIIKEISIMQQCDSPYVVRYYGSYFKQYDLWICMEYCGAGSVSDIMRLRKKTLTEDEIATILSDTLQGLVYLHLRRKIHRDIKAANILLNTEGYAKLADFGVAGQLTDTMAKRNTVIGTPFWMAPEVIEEIGYDCVADIWSLGITALEMAEGKPPYGEIHPMRAIFMIPQKPPPSFREPDRWSTEFIDFVSKCLVKEPDDRATATELLEHEFIRNAKHRSILKPMLEETCAIREQQRANRSFGGVLAASQAKSLATQENGMQQHITDNAFMEDPGTLVPEKFGEYQQSSASDATMIAHAEQGVDEGTLGPGGLRNLSKAAAPAAASSAASPLDMPAVDSGTMVELESNLGTMVINSDSDDSTTAKNNDDQKPRNRYRPQFLEHFDRKNAGDGRGDEKPIATEYSPAAAEQQQQQQQQQQQQDEQHLASGANDLNNWEHNMEMQFQQISAINQYGLQQHQQQQQVLMAYPLMNEQLIALNNQPNLLLSNAAPMGQQGIPAAAPAQPPPAYQNQHMHTQSHAYVEGEFEFLKFLTFDDLNQRLCNIDHEMELEIEQLNKKYNAKRQPIVDAMNAKRKRQQNINNNLIKI`,
       opsin: `>Drosophila_Opsin_Rh6
-MASLHPPSFAYMRDGRNLSLAESVPAEIMHMVDPYWYQWPPLEPMWFGIIGFVIAILGTMSLAGNFIVMYIFTSSKGLRTPSNMFVVNLAFSDFMMMFTMFPPVVLNGFYGTWIMGPFLCELYGMFGSLFGCVSIWSMTLIAYDRYCVIVKGMARKPLTATAAVLRLMVVWTICGAWALMPLFGWNRYVPEGNMTACGTDYFAKDWWNRSYIIVYSLWVYLTPLLTIIFSYWHIMKAVAAHEKAMREQAKKMNVASLRNSEADKSKAIEIKLAKVALTTISLWFFAWTPYTIINYAGIFESMHLSPLSTICGSVFAKANAVCNPIVYGLSHPKYKQVLREKMPCLACGKDDLTSDSRTQATAEISESQA`
+MASLHPPSFAYMRDGRNLSLAESVPAEIMHMVDPYWYQWPPLEPMWFGIIGFVIAILGTMSLAGNFIVMYIFTSSKGLRTPSNMFVVNLAFSDFMMMFTMFPPVVLNGFYGTWIMGPFLCELYGMFGSLFGCVSIWSMTLIAYDRYCVIVKGMARKPLTATAAVLRLMVVWTICGAWALMPLFGWNRYVPEGNMTACGTDYFAKDWWNRSYIIVYSLWVYLTPLLTIIFSYWHIMKAVAAHEKAMREQAKKMNVASLRNSEADKSKAIEIKLAKVALTTISLWFFAWTPYTIINYAGIFESMHLSPLSTICGSVFAKANAVCNPIVYGLSHPKYKQVLREKMPCLACGKDDLTSDSRTQATAEISESQA`,
+      human: `>Human_P53_Tumor_Suppressor
+MEEPQSDPSVEPPLSQETFSDLWKLLPENNVLSPLPSQAMDDLMLSPDDIEQWFTEDPGPDEAPRMPEAAPPVAPAPAAPTPAAPAPAPSWPLSSSVPSQKTYQGSYGFRLGFLHSGTAKSVTCTYSPALNKMFCQLAKTCPVQLWVDSTPPPGTRVRAMAIYKQSQHMTEVVRRCPHHERCSDSDGLAPPQHLIRVEGNLRVEYLDDRNTFRHSVVVPYEPPEVGSDCTTIHYNYMCNSSCMGGMNRRPILTIITLEDSSGNLLGRNSFEVRVCACPGRDRRTEEENLRKKGEPHHELPPGSTKRALPNNTSSSPQPKKKPLDGEYFTLQIRGRERFEMFRELNEALELKDAQAGKEPGGSRAHSSHLKSKKGQSTSRHKKLMFKTEGPDSD`
     };
 
     function loadDemo(key) {
@@ -843,9 +1787,75 @@ MASLHPPSFAYMRDGRNLSLAESVPAEIMHMVDPYWYQWPPLEPMWFGIIGFVIAILGTMSLAGNFIVMYIFTSSKGLRT
     }
 
     function shake() {
-      const card = document.querySelector('.input-card');
+      const card = document.querySelector('.card');
       card.classList.add('shake');
       card.addEventListener('animationend', () => card.classList.remove('shake'), { once: true });
+    }
+
+    // ── Batch Upload ──────────────────────────────────────────────────────────
+    const dropZone = document.getElementById('dropZone');
+
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.classList.add('dragover');
+    });
+
+    dropZone.addEventListener('dragleave', () => {
+      dropZone.classList.remove('dragover');
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('dragover');
+      const file = e.dataTransfer.files[0];
+      if (file) processFile(file);
+    });
+
+    function handleFileUpload(event) {
+      const file = event.target.files[0];
+      if (file) processFile(file);
+    }
+
+    async function processFile(file) {
+      const status = document.getElementById('batchStatus');
+      const results = document.getElementById('batchResults');
+
+      status.className = 'status-bar visible';
+      status.innerHTML = '<div class="spinner"></div><span class="status-text">Reading file...</span>';
+      results.innerHTML = '';
+
+      try {
+        const text = await file.text();
+        const seqs = parseSequences(text);
+
+        if (seqs.length === 0) {
+          status.innerHTML = '<span class="status-error">No valid sequences found in file.</span>';
+          return;
+        }
+
+        if (seqs.length > 100) {
+          status.innerHTML = '<span class="status-error">Maximum 100 sequences per batch. Found ' + seqs.length + '.</span>';
+          return;
+        }
+
+        status.innerHTML = `<div class="spinner"></div><span class="status-text">Processing ${seqs.length} sequences...</span>`;
+
+        const res = await fetch('/predict', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sequence: text }),
+        });
+
+        if (!res.ok) throw new Error(`Server error ${res.status}`);
+        const data = await res.json();
+
+        status.className = 'status-bar';
+        allResults = data.results || [];
+        renderResults(allResults, 0);
+
+      } catch(e) {
+        status.innerHTML = `<span class="status-error">${escHtml(e.message)}</span>`;
+      }
     }
 
     // ── Init ──────────────────────────────────────────────────────────────────

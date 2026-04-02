@@ -9,3 +9,6 @@ joblib
 scikit-learn
 python-multipart
 huggingface_hub
+aiohttp
+numpy
+tensorboard

@@ -360,8 +360,42 @@ async def root():
     return FileResponse(os.path.join(STATIC_DIR, "interface.html"))
 
 
+@app.get("/api/model/info")
+async def model_info():
+    """Return model metadata and configuration."""
+    return {
+        "model_name": "ProtFunc Enhanced",
+        "version": "2.0.0",
+        "esm_model": "esm2_t6_8M_UR50D",
+        "embed_dim": 320,
+        "num_labels": NUM_LABELS,
+        "supported_namespaces": ["molecular_function"],
+        "max_sequence_length": 2500,
+        "thresholds_loaded": len(thresholds) > 0,
+        "hierarchy_filtering": len(go_parents) > 0,
+        "mf_terms_loaded": len(mf_terms) if mf_terms else 0,
+    }
+
+
+@app.get("/api/health")
+async def health_check():
+    """Health check endpoint for monitoring."""
+    return {
+        "status": "healthy",
+        "model_loaded": model is not None,
+        "esm_loaded": esm_model is not None,
+        "labels": NUM_LABELS,
+    }
+
+
 class ProteinRequest(BaseModel):
     sequence: str
+
+
+class BatchPredictRequest(BaseModel):
+    sequences: list  # List of {name: str, sequence: str} objects
+    threshold: float = 0.5
+    include_suppressed: bool = True
 
 
 def parse_sequences(text):
@@ -440,6 +474,86 @@ async def predict(request: ProteinRequest):
             results.append({"name": name, "error": str(e)})
 
     return {"results": results}
+
+
+@app.post("/api/predict/batch")
+async def predict_batch(request: BatchPredictRequest):
+    """
+    Batch prediction endpoint for multiple sequences.
+    
+    Accepts a list of sequence objects and returns predictions for all.
+    More efficient than multiple single predictions due to batching.
+    """
+    results = []
+    device = torch.device("cpu")
+    mf_idx = app.state.mf_indices
+    custom_threshold = request.threshold
+    
+    for item in request.sequences:
+        name = item.get("name", "Unknown")
+        sequence = item.get("sequence", "")
+        
+        # Validate sequence
+        err = validate_sequence(name, sequence)
+        if err:
+            results.append({"name": name, "error": err})
+            continue
+        
+        if len(sequence) > 2500:
+            results.append({"name": name, "error": "Sequence too long (max 2500 aa)"})
+            continue
+        
+        try:
+            _, _, tokens = batch_converter([("p", sequence)])
+            with torch.no_grad():
+                rep = esm_model(tokens.to(device), repr_layers=[6])["representations"][6]
+                emb = rep[0, 1:len(sequence) + 1].mean(0)
+                prob = torch.sigmoid(model(emb.unsqueeze(0))).squeeze()
+            
+            if prob.dim() == 0:
+                prob = prob.unsqueeze(0)
+            
+            # Collect predictions above threshold
+            raw_preds = []
+            for i in mf_idx:
+                pv = float(prob[i])
+                thresh = float(thresholds.get(str(i), custom_threshold))
+                if pv >= thresh:
+                    go_id = mlb.classes_[i]
+                    raw_preds.append({
+                        "go_id": go_id,
+                        "name": go_map.get(go_id, go_id),
+                        "prob": round(pv, 4),
+                    })
+            raw_preds.sort(key=lambda x: x["prob"], reverse=True)
+            
+            # Apply hierarchy filter
+            if request.include_suppressed:
+                visible, suppressed = apply_hierarchy_filter(raw_preds, go_parents)
+            else:
+                visible = raw_preds
+                suppressed = []
+            
+            for p in visible:
+                p["prob"] = round(p["prob"], 3)
+            for p in suppressed:
+                p["prob"] = round(p["prob"], 3)
+            
+            results.append({
+                "name": name,
+                "sequence_length": len(sequence),
+                "predictions": visible,
+                "suppressed": suppressed if request.include_suppressed else [],
+                "n_above_threshold": len(raw_preds),
+            })
+        except Exception as e:
+            results.append({"name": name, "error": str(e)})
+    
+    return {
+        "results": results,
+        "total": len(results),
+        "successful": sum(1 for r in results if "error" not in r),
+    }
 
 
 if __name__ == "__main__":
