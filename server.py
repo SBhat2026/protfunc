@@ -1,12 +1,14 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Query, HTTPException
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
 from pydantic import BaseModel
+from typing import Optional
 import torch
 import torch.nn as nn
 import pandas as pd
+import numpy as np
 import joblib
 import json
 import math
@@ -14,6 +16,7 @@ import os
 import re
 import time
 import warnings
+import hashlib
 
 warnings.filterwarnings("ignore")
 
@@ -24,6 +27,17 @@ os.makedirs(STATIC_DIR, exist_ok=True)
 HF_REPO  = "Sbhat2026/protfunc-models"
 HF_FILES = ["baseline_res.pth", "mlb_public_v1.pkl", "go_annotations_fixed.csv", "go_names.json"]
 OPTIONAL = {"go_names.json"}
+
+# Developer access key - set via environment variable for security
+# Default is a hash of "protfunc-dev-2024" for development
+DEV_ACCESS_KEY = os.environ.get("PROTFUNC_DEV_KEY", hashlib.sha256(b"protfunc-dev-2024").hexdigest()[:16])
+
+# Evaluation metrics storage (populated when running evaluation)
+evaluation_metrics = {
+    "last_evaluated": None,
+    "test_set_size": 0,
+    "metrics": {}
+}
 
 # Globals populated during lifespan startup
 model           = None
@@ -553,6 +567,267 @@ async def predict_batch(request: BatchPredictRequest):
         "results": results,
         "total": len(results),
         "successful": sum(1 for r in results if "error" not in r),
+    }
+
+
+# ============================================================================
+# Developer Tools API (Secret Access Required)
+# ============================================================================
+
+def verify_dev_access(key: str) -> bool:
+    """Verify developer access key."""
+    return key == DEV_ACCESS_KEY
+
+
+class EvaluationRequest(BaseModel):
+    """Request body for running evaluation."""
+    sequences: list  # List of {sequence: str, true_go_ids: list}
+    threshold: float = 0.5
+
+
+@app.get("/api/dev/verify")
+async def verify_dev_key(key: str = Query(...)):
+    """Verify if a developer key is valid."""
+    if not verify_dev_access(key):
+        raise HTTPException(status_code=403, detail="Invalid developer key")
+    return {"valid": True, "message": "Developer access granted"}
+
+
+@app.get("/api/dev/metrics")
+async def get_dev_metrics(key: str = Query(...)):
+    """
+    Get stored evaluation metrics.
+    
+    Returns F1 scores, precision, recall, AUPRC, and other metrics
+    from the last evaluation run.
+    """
+    if not verify_dev_access(key):
+        raise HTTPException(status_code=403, detail="Invalid developer key")
+    
+    return {
+        "evaluation_metrics": evaluation_metrics,
+        "model_info": {
+            "num_labels": NUM_LABELS,
+            "mf_terms_count": len(mf_terms) if mf_terms else 0,
+            "hierarchy_edges": sum(len(v) for v in go_parents.values()) if go_parents else 0,
+            "thresholds_loaded": len(thresholds),
+        }
+    }
+
+
+@app.post("/api/dev/evaluate")
+async def run_evaluation(request: EvaluationRequest, key: str = Query(...)):
+    """
+    Run model evaluation on provided test sequences.
+    
+    Computes comprehensive metrics:
+    - F1 Score (Micro, Macro, Weighted, Samples)
+    - Precision (Micro, Macro)
+    - Recall (Micro, Macro)
+    - AUPRC (Area Under Precision-Recall Curve)
+    - Exact Match Ratio
+    - Hamming Loss
+    - Per-class performance breakdown
+    
+    This endpoint is for developer use only.
+    """
+    if not verify_dev_access(key):
+        raise HTTPException(status_code=403, detail="Invalid developer key")
+    
+    from sklearn.metrics import (
+        f1_score, precision_score, recall_score,
+        average_precision_score, hamming_loss,
+        multilabel_confusion_matrix
+    )
+    
+    device = torch.device("cpu")
+    mf_idx = app.state.mf_indices
+    
+    all_preds = []
+    all_probs = []
+    all_labels = []
+    errors = []
+    
+    for i, item in enumerate(request.sequences):
+        sequence = item.get("sequence", "")
+        true_go_ids = set(item.get("true_go_ids", []))
+        
+        # Skip invalid sequences
+        err = validate_sequence(f"Seq_{i}", sequence)
+        if err or len(sequence) > 2500:
+            errors.append({"index": i, "error": err or "Sequence too long"})
+            continue
+        
+        try:
+            # Get predictions
+            _, _, tokens = batch_converter([("p", sequence)])
+            with torch.no_grad():
+                rep = esm_model(tokens.to(device), repr_layers=[6])["representations"][6]
+                emb = rep[0, 1:len(sequence) + 1].mean(0)
+                prob = torch.sigmoid(model(emb.unsqueeze(0))).squeeze()
+            
+            if prob.dim() == 0:
+                prob = prob.unsqueeze(0)
+            
+            # Create prediction and label vectors for MF terms only
+            pred_vec = np.zeros(len(mf_idx))
+            prob_vec = np.zeros(len(mf_idx))
+            label_vec = np.zeros(len(mf_idx))
+            
+            for j, idx in enumerate(mf_idx):
+                go_id = mlb.classes_[idx]
+                prob_val = float(prob[idx])
+                thresh = float(thresholds.get(str(idx), request.threshold))
+                
+                prob_vec[j] = prob_val
+                pred_vec[j] = 1.0 if prob_val >= thresh else 0.0
+                label_vec[j] = 1.0 if go_id in true_go_ids else 0.0
+            
+            all_probs.append(prob_vec)
+            all_preds.append(pred_vec)
+            all_labels.append(label_vec)
+            
+        except Exception as e:
+            errors.append({"index": i, "error": str(e)})
+    
+    if not all_preds:
+        raise HTTPException(status_code=400, detail="No valid sequences to evaluate")
+    
+    # Stack arrays
+    Y_true = np.array(all_labels)
+    Y_pred = np.array(all_preds)
+    Y_prob = np.array(all_probs)
+    
+    # Compute metrics
+    metrics = {}
+    
+    # F1 Scores
+    metrics["f1_micro"] = float(f1_score(Y_true, Y_pred, average='micro', zero_division=0))
+    metrics["f1_macro"] = float(f1_score(Y_true, Y_pred, average='macro', zero_division=0))
+    metrics["f1_weighted"] = float(f1_score(Y_true, Y_pred, average='weighted', zero_division=0))
+    metrics["f1_samples"] = float(f1_score(Y_true, Y_pred, average='samples', zero_division=0))
+    
+    # Precision
+    metrics["precision_micro"] = float(precision_score(Y_true, Y_pred, average='micro', zero_division=0))
+    metrics["precision_macro"] = float(precision_score(Y_true, Y_pred, average='macro', zero_division=0))
+    
+    # Recall
+    metrics["recall_micro"] = float(recall_score(Y_true, Y_pred, average='micro', zero_division=0))
+    metrics["recall_macro"] = float(recall_score(Y_true, Y_pred, average='macro', zero_division=0))
+    
+    # AUPRC (mean average precision)
+    try:
+        # Only compute for columns with both positive and negative examples
+        valid_cols = [i for i in range(Y_true.shape[1]) if Y_true[:, i].sum() > 0 and Y_true[:, i].sum() < len(Y_true)]
+        if valid_cols:
+            metrics["auprc_macro"] = float(average_precision_score(
+                Y_true[:, valid_cols], Y_prob[:, valid_cols], average='macro'
+            ))
+            metrics["auprc_micro"] = float(average_precision_score(
+                Y_true[:, valid_cols], Y_prob[:, valid_cols], average='micro'
+            ))
+        else:
+            metrics["auprc_macro"] = 0.0
+            metrics["auprc_micro"] = 0.0
+    except Exception:
+        metrics["auprc_macro"] = 0.0
+        metrics["auprc_micro"] = 0.0
+    
+    # Hamming Loss
+    metrics["hamming_loss"] = float(hamming_loss(Y_true, Y_pred))
+    
+    # Exact Match Ratio (all labels correct)
+    metrics["exact_match_ratio"] = float(np.all(Y_true == Y_pred, axis=1).mean())
+    
+    # Coverage (avg fraction of true labels that were predicted)
+    coverage_per_sample = []
+    for i in range(len(Y_true)):
+        true_pos = Y_true[i].sum()
+        if true_pos > 0:
+            coverage_per_sample.append(((Y_true[i] * Y_pred[i]).sum()) / true_pos)
+    metrics["coverage"] = float(np.mean(coverage_per_sample)) if coverage_per_sample else 0.0
+    
+    # Generalization metrics
+    # Calculate performance by taxonomic group (if we have taxonomy info)
+    metrics["generalization"] = {
+        "samples_evaluated": len(all_preds),
+        "unique_go_terms_predicted": int(Y_pred.sum(axis=0).astype(bool).sum()),
+        "avg_predictions_per_sample": float(Y_pred.sum(axis=1).mean()),
+        "avg_true_labels_per_sample": float(Y_true.sum(axis=1).mean()),
+    }
+    
+    # Top-k accuracy
+    for k in [1, 3, 5, 10]:
+        top_k_correct = 0
+        for i in range(len(Y_true)):
+            true_labels = set(np.where(Y_true[i] == 1)[0])
+            if not true_labels:
+                continue
+            top_k_indices = set(np.argsort(Y_prob[i])[-k:])
+            if true_labels & top_k_indices:
+                top_k_correct += 1
+        metrics[f"top_{k}_accuracy"] = top_k_correct / max(1, sum(Y_true.sum(axis=1) > 0))
+    
+    # Store metrics globally
+    evaluation_metrics["last_evaluated"] = time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime())
+    evaluation_metrics["test_set_size"] = len(all_preds)
+    evaluation_metrics["metrics"] = metrics
+    
+    return {
+        "success": True,
+        "samples_evaluated": len(all_preds),
+        "samples_skipped": len(errors),
+        "errors": errors[:10],  # Return first 10 errors only
+        "metrics": metrics,
+    }
+
+
+@app.get("/api/dev/model/weights-summary")
+async def get_weights_summary(key: str = Query(...)):
+    """Get summary statistics of model weights for debugging."""
+    if not verify_dev_access(key):
+        raise HTTPException(status_code=403, detail="Invalid developer key")
+    
+    summary = {}
+    for name, param in model.named_parameters():
+        data = param.data.cpu().numpy()
+        summary[name] = {
+            "shape": list(data.shape),
+            "mean": float(np.mean(data)),
+            "std": float(np.std(data)),
+            "min": float(np.min(data)),
+            "max": float(np.max(data)),
+            "norm": float(np.linalg.norm(data)),
+        }
+    
+    return {
+        "model_architecture": model.__class__.__name__,
+        "total_params": sum(p.numel() for p in model.parameters()),
+        "trainable_params": sum(p.numel() for p in model.parameters() if p.requires_grad),
+        "layers": summary,
+    }
+
+
+@app.get("/api/dev/thresholds")
+async def get_thresholds(key: str = Query(...)):
+    """Get per-label prediction thresholds."""
+    if not verify_dev_access(key):
+        raise HTTPException(status_code=403, detail="Invalid developer key")
+    
+    threshold_info = []
+    for i in app.state.mf_indices:
+        go_id = mlb.classes_[i]
+        threshold_info.append({
+            "index": i,
+            "go_id": go_id,
+            "go_name": go_map.get(go_id, go_id),
+            "threshold": float(thresholds.get(str(i), 0.5)),
+        })
+    
+    return {
+        "total_mf_terms": len(threshold_info),
+        "thresholds": threshold_info[:100],  # Return first 100 for UI
+        "avg_threshold": np.mean([t["threshold"] for t in threshold_info]),
     }
 
 

@@ -1,0 +1,70 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "protfunc"
+version = "2.0.0"
+description = "Protein Function Prediction with Enhanced ResidualMLP"
+readme = "README.md"
+requires-python = ">=3.9"
+license = {text = "MIT"}
+authors = [
+    {name = "Siddhant Bhat"}
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+]
+
+dependencies = [
+    "torch",
+    "numpy",
+    "pandas",
+    "scikit-learn",
+    "aiohttp",
+    "fair-esm",
+    "joblib",
+]
+
+[project.optional-dependencies]
+server = [
+    "fastapi",
+    "uvicorn",
+    "pydantic",
+    "python-multipart",
+    "huggingface_hub",
+]
+training = [
+    "tensorboard",
+]
+dev = [
+    "pytest",
+    "black",
+    "flake8",
+]
+all = [
+    "protfunc[server,training,dev]",
+]
+
+[project.scripts]
+protfunc-train = "scripts.train_model:main"
+protfunc-scrape = "scripts.uniprot_scraper:main"
+
+[tool.setuptools.packages.find]
+include = ["models*", "scripts*"]
+
+[tool.black]
+line-length = 100
+target-version = ['py39', 'py310', 'py311', 'py312']
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
